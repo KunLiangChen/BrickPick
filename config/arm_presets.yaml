@@ -1,0 +1,31 @@
+# brickpick/config/arm_presets.yaml
+brickpick_arm:
+  ros__parameters:
+    
+    # ===== 动作预设（单位：米，相对于 arm_base_link） =====
+    presets:
+      home:     { x: 0.00, y: 0.0, z: 0.00 }   # 🔙 回正（零点）
+      forward:  { x: 0.15, y: 0.0, z: 0.00 }   # ➡️ 向前伸 15cm
+      down:     { x: 0.00, y: 0.0, z: -0.08 }  # ⬇️ 向下伸 8cm
+      backward: { x: -0.05, y: 0.0, z: 0.00 }  # ⬅️ 向后缩 5cm（谨慎）
+      # 可扩展：pickup, place, inspect 等
+    
+    # ===== 运动参数 =====
+    default_speed: 0.25             # 默认速度 (0.1~0.5)，值越小越平稳
+    use_relative: false             # 默认使用绝对坐标（推荐）
+    goal_timeout: 5.0               # 单个动作最大等待时间（秒）
+    
+    # ===== 安全限制 =====
+    position_limits:                # 末端工作空间软限位（防止碰撞）
+      x: { min: -0.06, max: 0.18 }
+      y: { min: -0.10, max: 0.10 }
+      z: { min: -0.12, max: 0.05 }
+    emergency_stop_on_error: true   # 动作失败时是否自动回 home
+    
+    # ===== 执行序列（可自定义顺序） =====
+    default_sequence: 
+      - home
+      - forward
+      - down
+      - backward
+      - home

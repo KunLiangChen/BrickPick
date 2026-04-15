@@ -7,6 +7,10 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+find_package(rclpy REQUIRED)
+# find_package(robomaster_msgs REQUIRED)
+# find_package(geometry_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -22,5 +26,11 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+ament_python_install_package(${PROJECT_NAME})
 
+install(PROGRAMS
+  src/${PROJECT_NAME}/${PROJECT_NAME}/arm_preset_node.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+#waiting for launch file
 ament_package()
