@@ -13,7 +13,7 @@ def generate_launch_description():
         executable='arm_preset_node.py',
         name='brickpick_arm_preset',
         output='screen',
-        parameters=[config_file]  # ✅ 只加载业务参数
+        parameters=[config_file]  
     )
     # Currently we only have arm preset
     return LaunchDescription([arm_node])

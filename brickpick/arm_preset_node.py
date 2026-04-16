@@ -23,25 +23,23 @@ class EPPresetArmController(Node):
             namespace='',
             parameters=[
                 ('presets', {
-                    'home': {'x':0.0,'y':0.0,'z':0.0},
-                    'forward': {'x':0.15,'y':0.0,'z':0.0},
-                    'down': {'x':0.0,'y':0.0,'z':-0.08},
-                    'backward': {'x':-0.05,'y':0.0,'z':0.0}
+                    'home': {'x':0.0,'z':0.0},
+                    'forward': {'x':0.15,'z':0.0},
+                    'down': {'x':0.0,'z':-0.08},
+                    'backward': {'x':-0.05,'z':0.0}
                 }),
-                ('default_speed', 0.25),
                 ('use_relative', False),
                 ('position_limits', {
                     'x': {'min': -0.06, 'max': 0.18},
-                    'y': {'min': -0.10, 'max': 0.10},
                     'z': {'min': -0.12, 'max': 0.05}
                 }),
-                ('default_sequence', ['home','forward','down','home','backward','home'])
+                ('default_sequence', ['home','forward','down','backward','home']),
+                ('emergency_stop_on_error', True)
             ]
         )
         
         # 读取参数
         self.presets = self.get_parameter('presets').value
-        self.speed = self.get_parameter('default_speed').value
         self.use_relative = self.get_parameter('use_relative').value
         self.limits = self.get_parameter('position_limits').value
         self.sequence = self.get_parameter('default_sequence').value
@@ -55,14 +53,13 @@ class EPPresetArmController(Node):
     def _validate_presets(self):
         """校验所有预设位置是否在安全范围内"""
         for name, pos in self.presets.items():
-            x, y, z = pos['x'], pos['y'], pos['z']
+            x, z = pos['x'], pos['z']
             if not (self.limits['x']['min'] <= x <= self.limits['x']['max'] and
-                    self.limits['y']['min'] <= y <= self.limits['y']['max'] and
                     self.limits['z']['min'] <= z <= self.limits['z']['max']):
-                self.get_logger().warn(f" 预设 '{name}' 超出安全限位: [{x},{y},{z}]")
+                self.get_logger().warn(f" 预设 '{name}' 超出安全限位: [{x},{z}]")
     
     def _point_from_dict(self, d: dict) -> Point:
-        return Point(x=float(d['x']), y=float(d['y']), z=float(d['z']))
+        return Point(x=float(d['x']), y=0.0, z=float(d['z']))
     
     def wait_for_server(self, timeout_sec=10.0):
         if not self._action_client.wait_for_server(timeout_sec):
@@ -70,14 +67,15 @@ class EPPresetArmController(Node):
             return False
         return True
     
-    def send_goal(self, position: Point, speed=None, relative=None):
+    def send_goal(self, position: Point, relative=None):
         """发送 move_arm 目标"""
         goal = MoveArm.Goal()
-        goal.target_position = position
-        goal.speed = speed if speed is not None else self.speed
+        # 根据参考文档修改：直接设置 x, z 字段
+        goal.x = position.x
+        goal.z = position.z
         goal.relative = relative if relative is not None else self.use_relative
         
-        self.get_logger().info(f" 执行: {position} | speed={goal.speed} | relative={goal.relative}")
+        self.get_logger().info(f" 执行: x={goal.x}, z={goal.z} | relative={goal.relative}")
         return self._action_client.send_goal_async(goal)
     
     def execute_preset(self, preset_name: str):
