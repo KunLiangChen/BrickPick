@@ -8,9 +8,27 @@ endif()
 # 查找依赖
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
+find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
 find_package(robomaster_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+
+# 添加 C++ 可执行文件
+add_executable(camera_node src/camera_node.cpp)
+ament_target_dependencies(camera_node
+  rclcpp
+  sensor_msgs
+  cv_bridge
+  robomaster_msgs
+)
+
+# 安装 C++ 可执行文件
+install(TARGETS
+  camera_node
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 # 安装 Python 脚本，使其可以通过 ros2 run 运行
 install(PROGRAMS

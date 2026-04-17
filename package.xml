@@ -13,6 +13,9 @@
   <test_depend>ament_lint_common</test_depend>
   
   <depend>rclpy</depend>
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>cv_bridge</depend>
   <depend>geometry_msgs</depend>
   <depend>robomaster_msgs</depend>
   <exec_depend>launch</exec_depend>
