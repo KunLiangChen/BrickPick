@@ -12,9 +12,9 @@
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
   
-  <exec_depend>rcply</exec_depend>
-  <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>robomaster_msgs</exec_depend>
+  <depend>rclpy</depend>
+  <depend>geometry_msgs</depend>
+  <depend>robomaster_msgs</depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
