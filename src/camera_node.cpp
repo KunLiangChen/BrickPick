@@ -17,20 +17,16 @@
 class CameraNode : public rclcpp::Node {
 public:
     CameraNode() : Node("camera_node") {
-        // 声明参数
-        this->declare_parameter("robot_ip", "192.168.2.1");
         this->declare_parameter("resolution", 360); // 360, 540, 720
         this->declare_parameter("protocol", "tcp"); // tcp or udp
         this->declare_parameter("enable_raw", true);
         this->declare_parameter("enable_h264", false);
 
         // 获取参数
-        std::string robot_ip = this->get_parameter("robot_ip").as_string();
         int resolution = this->get_parameter("resolution").as_int();
         std::string protocol = this->get_parameter("protocol").as_string();
 
-        RCLCPP_INFO(this->get_logger(), "正在启动 Camera 节点，机器人 IP: %s, 分辨率: %dp", 
-                    robot_ip.c_str(), resolution);
+        RCLCPP_INFO(this->get_logger(), "正在启动 Camera 节点, 分辨率: %dp",resolution);
 
         // 初始化发布者
         if (this->get_parameter("enable_raw").as_bool()) {
