@@ -11,7 +11,7 @@ from rclpy.action import ActionClient
 from rclpy.parameter import Parameter
 from robomaster_msgs.action import MoveArm
 from geometry_msgs.msg import Point
-import yaml
+import time
 import os
 
 class EPPresetArmController(Node):
@@ -22,26 +22,46 @@ class EPPresetArmController(Node):
         self.declare_parameters(
             namespace='',
             parameters=[
-                ('presets', {
-                    'home': {'x':0.0,'z':0.0},
-                    'forward': {'x':0.15,'z':0.0},
-                    'down': {'x':0.0,'z':-0.08},
-                    'backward': {'x':-0.05,'z':0.0}
-                }),
+                ('presets.home.x', 0.0),
+                ('presets.home.z', 0.0),
+                ('presets.forward.x', 0.15),
+                ('presets.forward.z', 0.0),
+                ('presets.down.x', 0.0),
+                ('presets.down.z', -0.08),
+                ('presets.backward.x', -0.05),
+                ('presets.backward.z', 0.0),
+                # 运动参数
                 ('use_relative', False),
-                ('position_limits', {
-                    'x': {'min': -0.06, 'max': 0.18},
-                    'z': {'min': -0.12, 'max': 0.05}
-                }),
-                ('default_sequence', ['home','forward','down','backward','home']),
-                ('emergency_stop_on_error', True)
+                ('goal_timeout', 5.0),
+                # 安全限制
+                ('position_limits.x.min', -0.06),
+                ('position_limits.x.max', 0.18),
+                ('position_limits.z.min', -0.12),
+                ('position_limits.z.max', 0.05),
+                ('emergency_stop_on_error', True),
+                # 序列（数组）
+                ('default_sequence', ['home', 'forward', 'down', 'backward', 'home'])
             ]
         )
         
         # 读取参数
-        self.presets = self.get_parameter('presets').value
+        self.presets = {}
+        preset_keys = ['home', 'forward', 'down', 'backward']
+        for key in preset_keys:
+            x = self.get_parameter(f'presets.{key}.x').value
+            z = self.get_parameter(f'presets.{key}.z').value
+            self.presets[key] = {'x': x, 'z': z}
         self.use_relative = self.get_parameter('use_relative').value
-        self.limits = self.get_parameter('position_limits').value
+        self.limits = {
+            'x': {
+                'min': self.get_parameter('position_limits.x.min').value,
+                'max': self.get_parameter('position_limits.x.max').value
+            },
+            'z': {
+                'min': self.get_parameter('position_limits.z.min').value,
+                'max': self.get_parameter('position_limits.z.max').value
+            }
+        }
         self.sequence = self.get_parameter('default_sequence').value
         
         # 2️⃣ 初始化 Action Client
@@ -88,11 +108,23 @@ class EPPresetArmController(Node):
         future = self.send_goal(pos)
         rclpy.spin_until_future_complete(self, future)
         
-        if future.result() is not None and future.result().accepted:
-            self.get_logger().info(f" '{preset_name}' 已接受")
+        if not future.result() or not future.result().accepted:
+            self.get_logger().warn(f"'{preset_name}' 被拒绝")
+            return False
+        
+        goal_handle = future.result()
+        self.get_logger().info(f"'{preset_name}' 已接受，等待执行完成...")
+        
+        result_future = goal_handle.get_result_async()
+        rclpy.spin_until_future_complete(self, result_future)
+        
+        status = result_future.result().status
+        # 状态码 4 = STATUS_SUCCEEDED
+        if status == 4:
+            self.get_logger().info(f"'{preset_name}' 执行成功")
             return True
         else:
-            self.get_logger().warn(f" '{preset_name}' 被拒绝")
+            self.get_logger().error(f"'{preset_name}' 执行失败，状态码: {status}")
             return False
     
     def execute_sequence(self, sequence=None):
@@ -109,7 +141,7 @@ class EPPresetArmController(Node):
                     self.execute_preset('home')
                     break
             # 简单延时：让机械臂稳定（实际可订阅 result 反馈）
-            rclpy.sleep(rclpy.duration.Duration(seconds=2.0))
+            time.sleep(0.005)
         
         self.get_logger().info("🎉 序列完成！")
 
@@ -123,7 +155,7 @@ def main(args=None):
         # 首次启动先回正（安全）
         if node.wait_for_server(5.0):
             node.execute_preset('home')
-            rclpy.sleep(rclpy.duration.Duration(seconds=1.5))
+            time.sleep(0.005)
         
         # 执行默认序列
         node.execute_sequence()
