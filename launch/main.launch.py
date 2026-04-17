@@ -6,14 +6,26 @@ from launch.substitutions import PathJoinSubstitution
 
 def generate_launch_description():
     pkg_dir = get_package_share_directory('brickpick')
-    config_file = PathJoinSubstitution([pkg_dir, 'config', 'arm_presets.yaml'])
+    arm_config = PathJoinSubstitution([pkg_dir, 'config', 'arm_presets.yaml'])
+    vision_config = PathJoinSubstitution([pkg_dir, 'config', 'vision_params.yaml'])
     
     arm_node = Node(
         package='brickpick',
         executable='arm_preset_node.py',
         name='brickpick_arm_preset',
         output='screen',
-        parameters=[config_file]  
+        parameters=[arm_config]  
     )
-    # Currently we only have arm preset
-    return LaunchDescription([arm_node])
+
+    vision_node = Node(
+        package='brickpick',
+        executable='vision_node.py',
+        name='brickpick_vision',
+        output='screen',
+        parameters=[vision_config]
+    )
+    
+    return LaunchDescription([
+        arm_node,
+        vision_node
+    ])

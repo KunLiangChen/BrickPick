@@ -1,0 +1,16 @@
+brickpick_vision:
+  ros__parameters:
+    # 模型设置
+    model_path: "yolo11n.pt"  # 确保该文件存在于当前工作目录或指定绝对路径
+    device: "cuda:0"            # 推理设备: cpu, cuda, or 0
+    
+    # 图像源话题
+    camera_topic: "camera/image_color"
+    
+    # 推理阈值
+    conf_threshold: 0.25
+    iou_threshold: 0.45
+    imgsz: 640
+    
+    # 调试选项
+    publish_debug_image: true

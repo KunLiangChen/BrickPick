@@ -11,10 +11,14 @@ find_package(ament_cmake_python REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(robomaster_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(vision_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
 
 # 安装 Python 脚本，使其可以通过 ros2 run 运行
 install(PROGRAMS
   brickpick/arm_preset_node.py
+  brickpick/vision_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
