@@ -13,6 +13,8 @@ from cv_bridge import CvBridge
 import cv2
 import numpy as np
 from ultralytics import YOLO
+import os
+from ament_index_python import get_package_share_directory
 
 class BrickVisionNode(Node):
     def __init__(self):
@@ -32,7 +34,13 @@ class BrickVisionNode(Node):
             ]
         )
         
-        model_path = self.get_parameter('model_path').value
+        # model_path = self.get_parameter('model_path').value
+        model_param = self.get_parameter('model_path').value
+        if not os.path.isabs(model_param):
+            pkg_dir = get_package_share_directory('brickpick');
+            model_path = os.path.join(pkg_dir,'model',model_param)
+        else:
+            model_path = model_param
         self.conf_threshold = self.get_parameter('conf_threshold').value
         self.iou_threshold = self.get_parameter('iou_threshold').value
         self.imgsz = self.get_parameter('imgsz').value

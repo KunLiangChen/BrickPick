@@ -9,13 +9,13 @@ def generate_launch_description():
     arm_config = PathJoinSubstitution([pkg_dir, 'config', 'arm_presets.yaml'])
     vision_config = PathJoinSubstitution([pkg_dir, 'config', 'vision_params.yaml'])
     
-    arm_node = Node(
-        package='brickpick',
-        executable='arm_preset_node.py',
-        name='brickpick_arm_preset',
-        output='screen',
-        parameters=[arm_config]  
-    )
+    # arm_node = Node(
+    #     package='brickpick',
+    #     executable='arm_preset_node.py',
+    #     name='brickpick_arm_preset',
+    #     output='screen',
+    #     parameters=[arm_config]  
+    # )
 
     vision_node = Node(
         package='brickpick',
@@ -26,6 +26,6 @@ def generate_launch_description():
     )
     
     return LaunchDescription([
-        arm_node,
+        # arm_node,
         vision_node
     ])
