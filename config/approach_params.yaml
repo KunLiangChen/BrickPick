@@ -1,0 +1,17 @@
+approach_node:
+  ros__parameters:
+    # 图像分辨率
+    img_width: 640
+    img_height: 360
+    
+    # 对准目标点 (基于相机内参 cx)
+    target_x_offset: 317.28
+    
+    # 控制参数
+    yaw_kp: 0.002           # 转向比例增益
+    forward_speed: 0.1      # 前进速度 (m/s)
+    
+    # 阈值设置
+    stop_y_threshold: 340.0 # 停止前进的 Y 坐标阈值 (接近底部)
+    align_threshold: 15.0   # 允许的像素偏差 (对准)
+    timeout_lost: 1.0       # 目标丢失超时时间 (秒)
