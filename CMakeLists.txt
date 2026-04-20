@@ -21,6 +21,7 @@ install(PROGRAMS
   brickpick/vision_node.py
   brickpick/teleop_keyboard_node.py
   brickpick/approach_node.py
+  brickpick/find_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -12,6 +12,6 @@ approach_node:
     forward_speed: 0.1      # 前进速度 (m/s)
     
     # 阈值设置
-    stop_y_threshold: 340.0 # 停止前进的 Y 坐标阈值 (接近底部)
+    stop_y_threshold: 280.0 # 停止前进的 Y 坐标阈值 (接近底部)
     align_threshold: 15.0   # 允许的像素偏差 (对准)
     timeout_lost: 1.0       # 目标丢失超时时间 (秒)
