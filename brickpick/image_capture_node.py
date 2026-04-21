@@ -27,7 +27,7 @@ class ImageCaptureNode(Node):
             namespace='',
             parameters=[
                 ('camera_topic', 'camera/image_color'),
-                ('save_dir', '~/brickpick_ws/src/brickpick/dataset'),
+                ('save_dir', '/home/nvidia/brickpick_ws/src/brickpick/dataset'),
                 ('capture_key', ' '), # 默认为空格键
             ]
         )
