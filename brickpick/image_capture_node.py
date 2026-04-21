@@ -71,24 +71,37 @@ class ImageCaptureNode(Node):
             self.get_logger().error(f"图像转换失败: {str(e)}")
 
     def get_key(self):
-        tty.setraw(sys.stdin.fileno())
-        rlist, _, _ = select.select([sys.stdin], [], [], 0.01)
-        if rlist:
-            key = sys.stdin.read(1)
-        else:
+        try:
+            tty.setraw(sys.stdin.fileno())
+            # 增加 select 超时时间到 0.02s，提高检测稳定性
+            rlist, _, _ = select.select([sys.stdin], [], [], 0.02)
+            if rlist:
+                key = sys.stdin.read(1)
+            else:
+                key = ''
+        except Exception as e:
+            self.get_logger().error(f"读取键盘错误: {str(e)}")
             key = ''
-        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.settings)
+        finally:
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.settings)
         return key
 
     def keyboard_loop(self):
         key = self.get_key()
-        if key == self.capture_key or key == 's':
-            self.capture_image()
-        elif key == 'q' or key == '\x03': # q 或 CTRL-C
-            self.get_logger().info("正在退出...")
-            self.destroy_node()
-            rclpy.shutdown()
-            sys.exit()
+        if key != '':
+            # 只要有按键就打印，方便用户调试
+            self.get_logger().info(f"检测到按键: '{key}'")
+            
+            if key == self.capture_key or key == 's':
+                self.get_logger().info("正在触发拍照...")
+                self.capture_image()
+            elif key == 'q' or key == '\x03': # q 或 CTRL-C
+                self.get_logger().info("正在退出...")
+                # 在退出前恢复终端设置
+                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.settings)
+                self.destroy_node()
+                rclpy.shutdown()
+                sys.exit()
 
     def capture_image(self):
         if self.latest_image is not None:
