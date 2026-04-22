@@ -20,6 +20,7 @@ find_package(behaviortree_cpp REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(rcpputils REQUIRED)
+find_package(std_msgs REQUIRED)
 # 安装 Python 脚本，使其可以通过 ros2 run 运行
 install(PROGRAMS
   brickpick/arm_preset_node.py
@@ -45,39 +46,40 @@ install(DIRECTORY config
 install(DIRECTORY model
   DESTINATION share/${PROJECT_NAME}/)
 
-# # 🔹 新增：编译 BehaviorTree 执行器节点 🔹
-# add_executable(bt_executor
-#   src/bt_executor.cpp
-#   src/find_action.cpp
-#   src/approach_action.cpp
-#   src/arm_action.cpp
-# )
+# 🔹 新增：编译 BehaviorTree 执行器节点 🔹
+add_executable(bt_executor
+  src/bt_executor.cpp
+  src/find_action.cpp
+  src/approach_action.cpp
+  src/arm_action.cpp
+)
 
-# # 包含头文件目录（含 BT 和当前包）
-# target_include_directories(bt_executor PUBLIC
-#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-#   $<INSTALL_INTERFACE:include>
-#   ${behaviortree_cpp_INCLUDE_DIRS}
-# )
+# 包含头文件目录（含 BT 和当前包）
+target_include_directories(bt_executor PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  ${behaviortree_cpp_INCLUDE_DIRS}
+)
 
-# # 链接库
-# ament_target_dependencies(bt_executor
-#   rclcpp
-#   std_srvs
-#   action_msgs
-#   behaviortree_cpp
-#   rcpputils
-# )
+# 链接库
+ament_target_dependencies(bt_executor
+  rclcpp
+  std_msgs
+  std_srvs
+  action_msgs
+  behaviortree_cpp
+  rcpputils
+)
 
-# # 🔹 关键：链接行为树插件库（防止运行时找不到符号） 🔹
-# target_link_libraries(bt_executor
-#   behaviortree_cpp::behaviortree_cpp
-# )
+# 🔹 关键：链接行为树插件库（防止运行时找不到符号） 🔹
+target_link_libraries(bt_executor
+  behaviortree_cpp::behaviortree_cpp
+)
 
-# 安装可执行文件
-# install(TARGETS bt_executor
-#   DESTINATION lib/${PROJECT_NAME}
-# )
+#安装可执行文件
+install(TARGETS bt_executor
+  DESTINATION lib/${PROJECT_NAME}
+)
   
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

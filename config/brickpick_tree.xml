@@ -1,0 +1,10 @@
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <!-- Sequence：严格按顺序执行，任一节点 FAILURE 则整体中断 -->
+    <Sequence name="BrickPickOnce">
+      <FindObject       name="find"     timeout="15.0"/>
+      <ApproachObject   name="approach" timeout="20.0"/>
+      <!-- <ExecuteArmSequence name="arm"    timeout="15.0"/> -->
+    </Sequence>
+  </BehaviorTree>
+</root>
