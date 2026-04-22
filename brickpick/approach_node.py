@@ -12,6 +12,8 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from vision_msgs.msg import Detection2DArray
 import time
+from std_srvs.srv import Trigger          # 🔹 [BT集成]
+from std_msgs.msg import String           # 🔹 [BT集成]
 import math
 
 class ApproachNode(Node):
@@ -50,7 +52,8 @@ class ApproachNode(Node):
         self.locked_y = 0.0  # 🔑 锁定目标的中心Y
         self.target_x_current = 0.0 # 当前控制用的X
         self.target_y_current = 0.0 # 当前控制用的Y
-        
+        self.active = False
+
         # 3. 订阅与发布
         self.subscription = self.create_subscription(
             Detection2DArray,
@@ -63,6 +66,20 @@ class ApproachNode(Node):
         self.timer = self.create_timer(0.1, self.control_loop)
         self.get_logger().info("Approach Node 已启动，等待目标...")
 
+        self.srv = self.create_service(Trigger, '~/start', self.handle_start)  # 🔹 [BT集成]
+        self.status_pub = self.create_publisher(String, '~/status', 10)        # 🔹 [BT集成]
+        self.get_logger().info("Approach Node 已启动，等待 BT 触发...")
+
+    def handle_start(self, req, res):     # 🔹 [BT集成]
+        self.active = True
+        self.current_state = "IDLE"
+        self._reset_lock()
+        self.last_detection_time = time.time()
+        self.status_pub.publish(String(data="WAITING_FOR_DETECTION"))
+        res.success = True
+        res.message = "Approach started"
+        return res
+    
     def detection_callback(self, msg):
         if not msg.detections:
             return
@@ -105,46 +122,42 @@ class ApproachNode(Node):
         # 否则：忽略本帧所有检测框，交由 control_loop 的超时逻辑处理
 
     def control_loop(self):
+        if not self.active: return
         twist = Twist()
         now = time.time()
-        
-        # 检查是否超时丢失目标
         if self.current_state != "IDLE" and (now - self.last_detection_time > self.timeout_lost):
             if self.current_state == "APPROACH":
-                self.get_logger().info("目标消失在画面中，认为已到达，停止。")
                 self.current_state = "DONE"
+                self.stop_robot()
             else:
-                self.get_logger().warn("目标丢失，停止运动。")
                 self.current_state = "IDLE"
-            self.stop_robot()
-            self._reset_lock()
-            return
+                self.stop_robot()
+                self._reset_lock()
+                return
 
         if self.current_state == "ALIGN":
             error_x = self.target_x - self.target_x_current
             if abs(error_x) < self.align_threshold:
-                self.get_logger().info("对准完成，开始前进...")
                 self.current_state = "APPROACH"
+                self.get_logger().info("对准完成，开始前进...")
             else:
                 twist.angular.z = error_x * self.yaw_kp
                 self.cmd_pub.publish(twist)
-                
+            self.status_pub.publish(String(data="ALIGNING"))
         elif self.current_state == "APPROACH":
             if self.target_y_current > self.stop_y_threshold:
-                self.get_logger().info(f"物体到达底部 (Y={self.target_y_current:.1f})，停止。")
                 self.current_state = "DONE"
                 self.stop_robot()
-                self._reset_lock()
+                self.get_logger().info("到达阈值，停止。")
             else:
-                error_x = self.target_x - self.target_x_current
                 twist.linear.x = self.forward_speed
-                twist.angular.z = error_x * self.yaw_kp
+                twist.angular.z = (self.target_x - self.target_x_current) * self.yaw_kp
                 self.cmd_pub.publish(twist)
-                
+            self.status_pub.publish(String(data="APPROACHING"))
         elif self.current_state == "DONE":
+            self.active = False           # 🔹 [BT集成] 任务完成
+            self.status_pub.publish(String(data="SUCCESS"))
             self.stop_robot()
-            # 如需循环执行，可取消下一行注释
-            # self.current_state = "IDLE"
 
     def _reset_lock(self):
         """重置锁定状态，准备下一次任务"""

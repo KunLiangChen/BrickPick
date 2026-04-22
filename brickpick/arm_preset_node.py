@@ -1,167 +1,115 @@
 #!/usr/bin/env python3
-"""
-brickpick: EP 机械臂预设动作控制器
-- 加载 config/arm_presets.yaml 参数
-- 通过 move_arm Action 执行精准点位控制
-- 支持安全限位校验与错误恢复
-"""
-import rclpy
+import rclpy, time, os, threading
 from rclpy.node import Node
 from rclpy.action import ActionClient
-from rclpy.parameter import Parameter
 from robomaster_msgs.action import MoveArm
 from geometry_msgs.msg import Point
-import time
-import os
+from std_srvs.srv import Trigger          # 🔹 [BT集成]
+from std_msgs.msg import String           # 🔹 [BT集成]
 
 class EPPresetArmController(Node):
     def __init__(self):
         super().__init__('brickpick_arm_preset')
-        
-        # 1️⃣ 加载参数（支持 YAML + 命令行覆盖）
-        self.declare_parameters(
-            namespace='',
-            parameters=[
-                ('presets.home.x', 0.0),
-                ('presets.home.z', 0.0),
-                ('presets.forward.x', 0.15),
-                ('presets.forward.z', 0.0),
-                ('presets.down.x', 0.0),
-                ('presets.down.z', -0.08),
-                ('presets.backward.x', -0.05),
-                ('presets.backward.z', 0.0),
-                # 运动参数
-                ('use_relative', False),
-                ('goal_timeout', 5.0),
-                # 安全限制
-                ('position_limits.x.min', -0.06),
-                ('position_limits.x.max', 0.18),
-                ('position_limits.z.min', -0.12),
-                ('position_limits.z.max', 0.05),
-                ('emergency_stop_on_error', True),
-                # 序列（数组）
-                ('default_sequence', ['home', 'forward', 'down', 'backward', 'home'])
-            ]
-        )
-        
-        # 读取参数
-        self.presets = {}
-        preset_keys = ['home', 'forward', 'down', 'backward']
-        for key in preset_keys:
-            x = self.get_parameter(f'presets.{key}.x').value
-            z = self.get_parameter(f'presets.{key}.z').value
-            self.presets[key] = {'x': x, 'z': z}
+        self.declare_parameters(namespace='', parameters=[
+            ('presets.home.x', 0.0), ('presets.home.z', 0.0),
+            ('presets.forward.x', 0.15), ('presets.forward.z', 0.0),
+            ('presets.down.x', 0.0), ('presets.down.z', -0.08),
+            ('presets.backward.x', -0.05), ('presets.backward.z', 0.0),
+            ('use_relative', False), ('goal_timeout', 5.0),
+            ('position_limits.x.min', -0.06), ('position_limits.x.max', 0.18),
+            ('position_limits.z.min', -0.12), ('position_limits.z.max', 0.05),
+            ('emergency_stop_on_error', True),
+            ('default_sequence', ['home', 'forward', 'down', 'backward', 'home'])
+        ])
+        self.presets = {k: {'x': self.get_parameter(f'presets.{k}.x').value, 
+                            'z': self.get_parameter(f'presets.{k}.z').value} 
+                        for k in ['home','forward','down','backward']}
         self.use_relative = self.get_parameter('use_relative').value
-        self.limits = {
-            'x': {
-                'min': self.get_parameter('position_limits.x.min').value,
-                'max': self.get_parameter('position_limits.x.max').value
-            },
-            'z': {
-                'min': self.get_parameter('position_limits.z.min').value,
-                'max': self.get_parameter('position_limits.z.max').value
-            }
-        }
+        self.limits = {ax: {'min': self.get_parameter(f'position_limits.{ax}.min').value,
+                            'max': self.get_parameter(f'position_limits.{ax}.max').value} for ax in ['x','z']}
         self.sequence = self.get_parameter('default_sequence').value
-        
-        # 2️⃣ 初始化 Action Client
         self._action_client = ActionClient(self, MoveArm, 'move_arm')
-        
-        # 3️⃣ 安全校验：检查预设位置是否在限位内
         self._validate_presets()
-    
+        
+        self.active = False               # 🔹 [BT集成]
+        self._lock = threading.Lock()
+        self.srv = self.create_service(Trigger, '~/start', self.handle_start)
+        self.status_pub = self.create_publisher(String, '~/status', 10)
+        self.get_logger().info("Arm Preset Node 已启动，等待 BT 触发...")
+
+    def handle_start(self, req, res):     # 🔹 [BT集成]
+        with self._lock:
+            if self.active:
+                res.success, res.message = False, "Sequence already running"
+                return res
+            self.active = True
+        self.status_pub.publish(String(data="EXECUTING"))
+        threading.Thread(target=self._run_sequence_thread, daemon=True).start()
+        res.success, res.message = True, "Arm sequence triggered"
+        return res
+
+    def _run_sequence_thread(self):       # 🔹 [BT集成] 后台执行
+        try:
+            if not self.wait_for_server(5.0):
+                self.status_pub.publish(String(data="FAILURE_NO_SERVER"))
+                return
+            self.execute_preset('home')
+            time.sleep(0.005)
+            success = self.execute_sequence()
+            self.status_pub.publish(String(data="SUCCESS" if success else "FAILURE"))
+        except Exception as e:
+            self.get_logger().error(f"Sequence error: {e}")
+            self.status_pub.publish(String(data="FAILURE"))
+        finally:
+            self.active = False
+
     def _validate_presets(self):
-        """校验所有预设位置是否在安全范围内"""
         for name, pos in self.presets.items():
             x, z = pos['x'], pos['z']
             if not (self.limits['x']['min'] <= x <= self.limits['x']['max'] and
                     self.limits['z']['min'] <= z <= self.limits['z']['max']):
-                self.get_logger().warn(f" 预设 '{name}' 超出安全限位: [{x},{z}]")
-    
+                self.get_logger().warn(f"⚠️ 预设 '{name}' 超出限位: [{x},{z}]")
+
     def _point_from_dict(self, d: dict) -> Point:
         return Point(x=float(d['x']), y=0.0, z=float(d['z']))
-    
+
     def wait_for_server(self, timeout_sec=10.0):
         if not self._action_client.wait_for_server(timeout_sec):
-            self.get_logger().error(f" move_arm 服务未就绪")
+            self.get_logger().error("❌ move_arm Action 未就绪")
             return False
         return True
-    
+
     def send_goal(self, position: Point, relative=None):
-        """发送 move_arm 目标"""
         goal = MoveArm.Goal()
-        # 根据参考文档修改：直接设置 x, z 字段
-        goal.x = position.x
-        goal.z = position.z
+        goal.x, goal.z = position.x, position.z
         goal.relative = relative if relative is not None else self.use_relative
-        
-        self.get_logger().info(f" 执行: x={goal.x}, z={goal.z} | relative={goal.relative}")
         return self._action_client.send_goal_async(goal)
-    
+
     def execute_preset(self, preset_name: str):
-        """执行单个预设动作"""
-        if preset_name not in self.presets:
-            self.get_logger().error(f" 未知预设: {preset_name}")
-            return False
-        
+        if preset_name not in self.presets: return False
         pos = self._point_from_dict(self.presets[preset_name])
         future = self.send_goal(pos)
         rclpy.spin_until_future_complete(self, future)
-        
-        if not future.result() or not future.result().accepted:
-            self.get_logger().warn(f"'{preset_name}' 被拒绝")
-            return False
-        
-        goal_handle = future.result()
-        self.get_logger().info(f"'{preset_name}' 已接受，等待执行完成...")
-        
-        result_future = goal_handle.get_result_async()
+        if not future.result() or not future.result().accepted: return False
+        result_future = future.result().get_result_async()
         rclpy.spin_until_future_complete(self, result_future)
-        
-        status = result_future.result().status
-        # 状态码 4 = STATUS_SUCCEEDED
-        if status == 4:
-            self.get_logger().info(f"'{preset_name}' 执行成功")
-            return True
-        else:
-            self.get_logger().error(f"'{preset_name}' 执行失败，状态码: {status}")
-            return False
-    
-    def execute_sequence(self, sequence=None):
-        """执行动作序列（带简单错误恢复）"""
+        return result_future.result().status == 4
+
+    def execute_sequence(self, sequence=None):  # 🔹 改为返回 bool
         seq = sequence or self.sequence
-        if not self.wait_for_server():
-            return
-        
         for i, name in enumerate(seq):
-            self.get_logger().info(f"🔹 [{i+1}/{len(seq)}] 执行: {name}")
             if not self.execute_preset(name):
                 if self.get_parameter('emergency_stop_on_error').value:
-                    self.get_logger().error("🛑 错误触发急停，执行回 home")
                     self.execute_preset('home')
-                    break
-            # 简单延时：让机械臂稳定（实际可订阅 result 反馈）
+                return False
             time.sleep(0.005)
-        
-        self.get_logger().info("🎉 序列完成！")
+        return True
 
 def main(args=None):
     rclpy.init(args=args)
-    
-    # 支持通过命令行覆盖配置文件路径
     node = EPPresetArmController()
-    
-    try:
-        # 首次启动先回正（安全）
-        if node.wait_for_server(5.0):
-            node.execute_preset('home')
-            time.sleep(0.005)
-        
-        # 执行默认序列
-        node.execute_sequence()
-        
-    except KeyboardInterrupt:
-        node.get_logger().info("🛑 用户中断")
+    try: rclpy.spin(node)                 # 🔹 移除自动执行，仅 spin
+    except KeyboardInterrupt: pass
     finally:
         node.destroy_node()
         rclpy.shutdown()

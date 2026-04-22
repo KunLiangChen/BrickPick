@@ -11,17 +11,26 @@
   <buildtool_depend>ament_cmake_python</buildtool_depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
-  
+
   <depend>rclpy</depend>
   <depend>geometry_msgs</depend>
   <depend>robomaster_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>vision_msgs</depend>
   <depend>cv_bridge</depend>
+    <!-- 🔹 新增：BehaviorTree 集成依赖 🔹 -->
+  <depend>behaviortree_cpp</depend>
+  <depend>std_srvs</depend>
+  <depend>action_msgs</depend>
+  <build_depend>rcpputils</build_depend>
+  <depend>rclcpp</depend> 
+
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
+  
   <export>
     <build_type>ament_cmake</build_type>
+    <exec_depend>behaviortree_cpp</exec_depend>
   </export>
 </package>

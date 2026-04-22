@@ -9,7 +9,8 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from vision_msgs.msg import Detection2DArray
-
+from std_srvs.srv import Trigger          
+from std_msgs.msg import String           
 class FindNode(Node):
     def __init__(self):
         super().__init__('find_node')
@@ -26,7 +27,7 @@ class FindNode(Node):
 
         # 2. 状态变量
         self.found = False
-        
+        self.active = False
         # 3. 订阅与发布
         self.subscription = self.create_subscription(
             Detection2DArray,
@@ -35,28 +36,57 @@ class FindNode(Node):
             10)
             
         self.cmd_pub = self.create_publisher(Twist, 'cmd_vel', 10)
+        self.srv = self.create_service(Trigger, '~/start', self.handle_start)
+        self.status_pub = self.create_publisher(String, '~/status', 10)
         
+        self.get_logger().info("Find Node 已启动，等待 BT 触发...")
         # 4. 定时器用于发布控制指令
         self.timer = self.create_timer(0.1, self.control_loop)
         
         self.get_logger().info("Find Node 已启动，正在旋转寻找目标...")
 
+    def handle_start(self, req, res):     # 🔹 [BT集成]
+        self.active = True
+        self.found = False
+        self.status_pub.publish(String(data="SEARCHING"))
+        res.success = True
+        res.message = "Find started"
+        return res
+    
     def detection_callback(self, msg):
+        if not self.active: return        # 未激活时不处理
         # 如果检测到数组不为空，说明看到了物体
-        if len(msg.detections) > 0:
-            if not self.found:
-                self.get_logger().info("检测到物体！停止旋转。")
-                self.found = True
-                self.stop_robot()
+        # if len(msg.detections) > 0:
+        #     if not self.found:
+        #         self.get_logger().info("检测到物体！停止旋转。")
+        #         self.found = True
+        #         self.stop_robot()
+        if msg.detections and not self.found:
+            self.found = True
+            self.get_logger().info("✅ 检测到物体！停止旋转。")
+            self.stop_robot()
+
 
     def control_loop(self):
+        # if not self.found:
+        #     twist = Twist()
+        #     twist.angular.z = self.rotate_speed
+        #     self.cmd_pub.publish(twist)
+        # else:
+        #     # 找到后持续发送停止指令，防止惯性滑动
+        #     self.stop_robot()
+        if not self.active: return       
         if not self.found:
             twist = Twist()
             twist.angular.z = self.rotate_speed
             self.cmd_pub.publish(twist)
+            self.status_pub.publish(String(data="SEARCHING"))
         else:
-            # 找到后持续发送停止指令，防止惯性滑动
             self.stop_robot()
+            self.active = False           
+            self.status_pub.publish(String(data="SUCCESS"))
+            self.get_logger().info(" Find 任务完成，状态: SUCCESS")
+
 
     def stop_robot(self):
         self.cmd_pub.publish(Twist())
