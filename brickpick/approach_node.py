@@ -1,35 +1,37 @@
 #!/usr/bin/env python3
 """
-brickpick: 接近物体节点
+brickpick: 接近物体节点 (无ID空间锁定版)
 - 订阅 vision/detections
-- 控制机器人旋转以对准物体中心
-- 对准后缓慢前进，直到物体到达画面底部或消失
+- 首次检测时锁定画面最下方（离车最近）的目标坐标
+- 后续仅追踪空间距离最近的框，防止多目标跳变
+- 控制机器人旋转对准，对准后缓慢前进
+- 到达画面底部或丢失超时后停止
 """
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from vision_msgs.msg import Detection2DArray
 import time
+import math
 
 class ApproachNode(Node):
     def __init__(self):
         super().__init__('approach_node')
-        
         # 1. 声明参数
         self.declare_parameters(
             namespace='',
             parameters=[
                 ('img_width', 640),
                 ('img_height', 360),
-                ('target_x_offset', 317.28), # 根据 camera_info 的 p[2] (cx)
-                ('yaw_kp', 0.002),           # 略微调高增益以提高对准灵敏度
-                ('forward_speed', 0.1),      # 前进速度 (m/s)
-                ('stop_y_threshold', 340.0), # 画面高度 360，设为 340 接近底部
-                ('align_threshold', 15.0),   # 缩小允许偏差，对准更精确
-                ('timeout_lost', 1.0)        # 目标丢失超时停止 (秒)
+                ('target_x_offset', 317.28),
+                ('yaw_kp', 0.002),
+                ('forward_speed', 0.1),
+                ('stop_y_threshold', 340.0),
+                ('align_threshold', 15.0),
+                ('timeout_lost', 1.0),
+                ('tracking_threshold', 80.0)  # 🔑 新增：空间连续追踪容差(像素)
             ]
         )
-        
         self.img_width = self.get_parameter('img_width').value
         self.img_height = self.get_parameter('img_height').value
         self.target_x = self.get_parameter('target_x_offset').value
@@ -38,10 +40,16 @@ class ApproachNode(Node):
         self.stop_y_threshold = self.get_parameter('stop_y_threshold').value
         self.align_threshold = self.get_parameter('align_threshold').value
         self.timeout_lost = self.get_parameter('timeout_lost').value
-
-        # 2. 状态变量
+        self.tracking_threshold = self.get_parameter('tracking_threshold').value
+        
+        # 2. 状态与锁定变量
         self.last_detection_time = 0.0
         self.current_state = "IDLE" # IDLE, ALIGN, APPROACH, DONE
+        
+        self.locked_x = 0.0  # 🔑 锁定目标的中心X
+        self.locked_y = 0.0  # 🔑 锁定目标的中心Y
+        self.target_x_current = 0.0 # 当前控制用的X
+        self.target_y_current = 0.0 # 当前控制用的Y
         
         # 3. 订阅与发布
         self.subscription = self.create_subscription(
@@ -49,29 +57,52 @@ class ApproachNode(Node):
             'vision/detections',
             self.detection_callback,
             10)
-            
         self.cmd_pub = self.create_publisher(Twist, 'cmd_vel', 10)
         
-        # 4. 定时器用于处理超时或停止
+        # 4. 控制定时器
         self.timer = self.create_timer(0.1, self.control_loop)
-        
         self.get_logger().info("Approach Node 已启动，等待目标...")
 
     def detection_callback(self, msg):
-        if len(msg.detections) > 0:
-            # 取第一个检测到的物体 (假设是我们要找的目标)
-            detection = msg.detections[0]
-            self.target_x_current = detection.bbox.center.position.x
-            self.target_y_current = detection.bbox.center.position.y
+        if not msg.detections:
+            return
+
+        # 🟢 状态 IDLE：寻找并锁定最下方的目标
+        if self.current_state == "IDLE":
+            # Y坐标越大越靠近画面底部
+            target = max(msg.detections, key=lambda d: d.bbox.center.position.y)
+            
+            self.locked_x = target.bbox.center.position.x
+            self.locked_y = target.bbox.center.position.y
+            self.target_x_current = self.locked_x
+            self.target_y_current = self.locked_y
             self.last_detection_time = time.time()
             
-            # 更新状态
-            if self.current_state == "IDLE":
-                self.current_state = "ALIGN"
-                self.get_logger().info("发现目标，开始对准...")
-        else:
-            # 如果没检测到，且之前在运行，会由 control_loop 处理超时
-            pass
+            self.current_state = "ALIGN"
+            self.get_logger().info(f"🔒 已锁定最下方目标 (X:{self.locked_x:.0f}, Y:{self.locked_y:.0f})，开始对准...")
+            return
+
+        # 🟡 状态 ALIGN / APPROACH：空间距离过滤，防止跳变
+        best_match = None
+        min_dist = float('inf')
+
+        for d in msg.detections:
+            dx = d.bbox.center.position.x - self.locked_x
+            dy = d.bbox.center.position.y - self.locked_y
+            dist = math.hypot(dx, dy) # 等价于 (dx**2 + dy**2)**0.5
+            
+            if dist < min_dist:
+                min_dist = dist
+                best_match = d
+
+        # 仅当最近的目标在容差范围内时，才更新锁定位置
+        if best_match is not None and min_dist <= self.tracking_threshold:
+            self.locked_x = best_match.bbox.center.position.x
+            self.locked_y = best_match.bbox.center.position.y
+            self.target_x_current = self.locked_x
+            self.target_y_current = self.locked_y
+            self.last_detection_time = time.time()
+        # 否则：忽略本帧所有检测框，交由 control_loop 的超时逻辑处理
 
     def control_loop(self):
         twist = Twist()
@@ -85,8 +116,8 @@ class ApproachNode(Node):
             else:
                 self.get_logger().warn("目标丢失，停止运动。")
                 self.current_state = "IDLE"
-            
             self.stop_robot()
+            self._reset_lock()
             return
 
         if self.current_state == "ALIGN":
@@ -95,18 +126,16 @@ class ApproachNode(Node):
                 self.get_logger().info("对准完成，开始前进...")
                 self.current_state = "APPROACH"
             else:
-                # 简单的比例控制旋转
                 twist.angular.z = error_x * self.yaw_kp
                 self.cmd_pub.publish(twist)
-
+                
         elif self.current_state == "APPROACH":
-            # 检查是否到达画面最下方
             if self.target_y_current > self.stop_y_threshold:
                 self.get_logger().info(f"物体到达底部 (Y={self.target_y_current:.1f})，停止。")
                 self.current_state = "DONE"
                 self.stop_robot()
+                self._reset_lock()
             else:
-                # 保持对准的同时缓慢前进
                 error_x = self.target_x - self.target_x_current
                 twist.linear.x = self.forward_speed
                 twist.angular.z = error_x * self.yaw_kp
@@ -114,8 +143,15 @@ class ApproachNode(Node):
                 
         elif self.current_state == "DONE":
             self.stop_robot()
-            # 可以在这里做一些后续处理，或者回到 IDLE
+            # 如需循环执行，可取消下一行注释
             # self.current_state = "IDLE"
+
+    def _reset_lock(self):
+        """重置锁定状态，准备下一次任务"""
+        self.locked_x = 0.0
+        self.locked_y = 0.0
+        self.target_x_current = 0.0
+        self.target_y_current = 0.0
 
     def stop_robot(self):
         self.cmd_pub.publish(Twist())

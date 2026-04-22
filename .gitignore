@@ -1,0 +1,57 @@
+# --- 自定义忽略 ---
+dataset/
+data/
+
+# --- C++ 忽略内容 ---
+# 编译产物
+*.o
+*.obj
+*.exe
+*.out
+*.app
+*.so
+*.dll
+*.dylib
+
+# 静态库
+*.a
+*.lib
+
+# CMake 自动生成的文件 (如果使用 CMake)
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install/
+build/
+devel/
+
+# IDE 相关 (Visual Studio / CLion)
+.vs/
+out/
+.idea/
+
+# --- Python 忽略内容 ---
+# 字节码文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+venv/
+.venv/
+env/
+.env/
+
+# 分发/打包
+dist/
+build/
+*.egg-info/
+
+# Jupyter Notebook 检查点
+.ipynb_checkpoints/
+
+# --- 操作系统及其他 ---
+.DS_Store
+Thumbs.db
+*.log

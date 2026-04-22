@@ -56,7 +56,7 @@ class ImageCaptureNode(Node):
             10)
             
         # 使用定时器定期检查键盘输入
-        self.timer = self.create_timer(0.05, self.keyboard_loop)
+        self.timer = self.create_timer(0.1, self.keyboard_loop)
         
         self.get_logger().info(f"图像抓拍节点已启动")
         self.get_logger().info(f"监听话题: {self.camera_topic}")
@@ -74,7 +74,7 @@ class ImageCaptureNode(Node):
         try:
             tty.setraw(sys.stdin.fileno())
             # 增加 select 超时时间到 0.02s，提高检测稳定性
-            rlist, _, _ = select.select([sys.stdin], [], [], 0.02)
+            rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
             if rlist:
                 key = sys.stdin.read(1)
             else:
@@ -82,8 +82,8 @@ class ImageCaptureNode(Node):
         except Exception as e:
             self.get_logger().error(f"读取键盘错误: {str(e)}")
             key = ''
-        finally:
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.settings)
+       
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.settings)
         return key
 
     def keyboard_loop(self):
@@ -98,10 +98,11 @@ class ImageCaptureNode(Node):
             elif key == 'q' or key == '\x03': # q 或 CTRL-C
                 self.get_logger().info("正在退出...")
                 # 在退出前恢复终端设置
-                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.settings)
-                self.destroy_node()
-                rclpy.shutdown()
-                sys.exit()
+                # termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.settings)
+                # self.destroy_node()
+                # rclpy.shutdown()
+                # sys.exit()
+                raise SystemExit
 
     def capture_image(self):
         if self.latest_image is not None:
@@ -122,9 +123,10 @@ def main(args=None):
     node = ImageCaptureNode()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt,SystemExit):
         pass
     finally:
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, node.settings)
         node.destroy_node()
         rclpy.shutdown()
 
