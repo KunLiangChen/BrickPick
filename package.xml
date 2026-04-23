@@ -32,5 +32,6 @@
   <export>
     <build_type>ament_cmake</build_type>
     <exec_depend>behaviortree_cpp</exec_depend>
+    <groot2_manifest file="config/groot2_manifest.xml"/>
   </export>
 </package>

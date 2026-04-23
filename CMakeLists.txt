@@ -21,6 +21,33 @@ find_package(std_srvs REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(rcpputils REQUIRED)
 find_package(std_msgs REQUIRED)
+
+# ========== 🔹 新增：Groot2 插件共享库 🔹 ==========
+add_library(brickpick_bt_plugin SHARED
+  src/bt_nodes_plugin.cpp    # 新建的插件入口
+  src/find_action.cpp
+  src/approach_action.cpp
+  src/arm_action.cpp
+)
+
+target_include_directories(brickpick_bt_plugin PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+
+ament_target_dependencies(brickpick_bt_plugin
+  rclcpp
+  std_msgs
+  std_srvs
+  behaviortree_cpp
+  rcpputils
+)
+
+# 确保插件库链接 behaviortree_cpp 核心库
+target_link_libraries(brickpick_bt_plugin
+  behaviortree_cpp::behaviortree_cpp
+)
+# ========== 🔹 新增结束 🔹 ==========
+
 # 安装 Python 脚本，使其可以通过 ros2 run 运行
 install(PROGRAMS
   brickpick/arm_preset_node.py
@@ -46,12 +73,15 @@ install(DIRECTORY config
 install(DIRECTORY model
   DESTINATION share/${PROJECT_NAME}/)
 
-# 🔹 新增：编译 BehaviorTree 执行器节点 🔹
+# # 🔹 新增：编译 BehaviorTree 执行器节点 🔹
+# add_executable(bt_executor
+#   src/bt_executor.cpp
+#   src/find_action.cpp
+#   src/approach_action.cpp
+#   src/arm_action.cpp
+# )
 add_executable(bt_executor
   src/bt_executor.cpp
-  src/find_action.cpp
-  src/approach_action.cpp
-  src/arm_action.cpp
 )
 
 # 包含头文件目录（含 BT 和当前包）
@@ -73,6 +103,7 @@ ament_target_dependencies(bt_executor
 
 # 🔹 关键：链接行为树插件库（防止运行时找不到符号） 🔹
 target_link_libraries(bt_executor
+  brickpick_bt_plugin
   behaviortree_cpp::behaviortree_cpp
 )
 
@@ -80,6 +111,16 @@ target_link_libraries(bt_executor
 install(TARGETS bt_executor
   DESTINATION lib/${PROJECT_NAME}
 )
+
+# 安装插件共享库（Groot2 加载用）
+install(TARGETS brickpick_bt_plugin
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib      # ← 关键：.so 文件必须安装到 lib/
+  RUNTIME DESTINATION bin)
+
+# 安装 manifest 文件到 share 目录（Groot2 自动发现路径）
+install(FILES config/groot2_manifest.xml
+  DESTINATION share/${PROJECT_NAME})
   
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

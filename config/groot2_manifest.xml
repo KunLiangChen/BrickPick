@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<root>
+  <TreeNodesModel>
+    <!-- Find 节点 -->
+    <Action ID="FindObject" lib="libbrickpick_bt_plugin.so">
+      <input_port name="timeout" default="10.0">搜索超时时间（秒）</input_port>
+      <output_port name="result" default="">检测结果坐标/状态</output_port>
+    </Action>
+
+    <!-- Approach 节点 -->
+    <Action ID="ApproachObject" lib="libbrickpick_bt_plugin.so">
+      <input_port name="timeout" default="10.0">逼近超时时间（秒）</input_port>
+    </Action>
+
+    <!-- 预留 Arm 节点（取消注释后即可使用） -->
+    <!-- <Action ID="ExecuteArmSequence" lib="libbrickpick_bt_plugin.so">
+      <input_port name="timeout" default="15.0">机械臂执行超时时间（秒）</input_port>
+      <input_port name="preset" default="pick">预设动作名称</input_port>
+    </Action> -->
+  </TreeNodesModel>
+</root>
