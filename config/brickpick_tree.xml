@@ -1,26 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root BTCPP_format="4"
       main_tree_to_execute="MainTree">
+
   <BehaviorTree ID="MainTree">
-    <Sequence name="BrickPickOnce">
-      <FindObject name="find"
-                  timeout="15.0"
-                  result=""/>
-      <ApproachObject name="approach"
-                      timeout="20.0"/>
+    <Sequence name="ArmOnlySequence">
+      <ExecuteArmSequence name="arm"
+                          timeout="10.0"/>
     </Sequence>
   </BehaviorTree>
 
   <!-- Description of Node Models (used by Groot) -->
   <TreeNodesModel>
-    <Action ID="ApproachObject">
+    <Action ID="ExecuteArmSequence">
       <input_port name="timeout"
-                  default="10.0">逼近超时时间（秒）</input_port>
-    </Action>
-    <Action ID="FindObject">
-      <input_port name="timeout"
-                  default="10.0">搜索超时时间（秒）</input_port>
-      <output_port name="result">检测结果坐标/状态</output_port>
+                  default="10.0">机械臂动作序列超时时间（秒）</input_port>
     </Action>
   </TreeNodesModel>
 
