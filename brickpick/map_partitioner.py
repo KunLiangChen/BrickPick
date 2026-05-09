@@ -12,7 +12,7 @@ import math
 
 class MapPartitioner:
     def __init__(self, yaml_path, inflation_radius=3, min_area=500, 
-                 alpha=1.0, beta=0.002, merge_cost_threshold=1.5, max_region_radius= 1.5):
+                 alpha=1.0, beta=0.002, merge_cost_threshold=1.5, max_region_radius= 1):
         self.yaml_path = yaml_path
         self.inflation_radius = inflation_radius
         self.min_area = min_area
@@ -43,7 +43,7 @@ class MapPartitioner:
         self.occ_map[img >= 250] = 0  # Free
         
         # # 未知区域单独标记为 2 (可选，本算法主要关注 Free)
-        self.unknown_mask = (img > 100) & (img < 200)
+        # self.unknown_mask = (img > 100) & (img < 200)
         
         print(f"Map loaded. Size: {self.occ_map.shape}, Resolution: {self.resolution}")
 
@@ -98,6 +98,59 @@ class MapPartitioner:
                         heapq.heappush(open_set, (f_score, neighbor))
         return None # 无路径
 
+    def visualize_occ_map(self, home_pixel=None, save_path="occ_map_visualization.png"):
+        """可视化占用地图"""
+        plt.figure(figsize=(10, 5))
+        
+        # 创建RGB图像
+        vis_map = np.ones((self.occ_map.shape[0], self.occ_map.shape[1], 3), dtype=np.uint8) * 255
+        vis_map[self.occ_map == 1] = [0, 0, 0]  # 黑色表示障碍物
+        
+        # 安全检查：防止传入的坐标越界导致绘图崩溃
+        if home_pixel is not None:
+            h, w = self.occ_map.shape
+            if not (0 <= home_pixel[0] < h and 0 <= home_pixel[1] < w):
+                print(f"⚠️ Warning: home_pixel {home_pixel} is out of map bounds {self.occ_map.shape}!")
+                home_pixel = None  # 置空，后续不绘制标记
+                
+        # ================= 子图1：二值化RGB图 =================
+        plt.subplot(121)
+        plt.title(f"Occupancy Map (Binary)\n0=Free(White), 1=Occupied(Black)\nShape: {self.occ_map.shape}")
+        plt.imshow(vis_map)
+        if home_pixel is not None:
+            # 注意：plt.scatter 的坐标顺序是 (x, y) -> (col, row) -> (home_pixel[1], home_pixel[0])
+            plt.scatter([home_pixel[1]], [home_pixel[0]], c='red', s=120, marker='x', linewidths=2.5, label='Home')
+            plt.legend(loc='upper right')
+        plt.axis('off')
+        
+        # ================= 子图2：原始灰度值图 =================
+        plt.subplot(122)
+        plt.title(f"Raw occ_map Values\nResolution: {self.resolution}m")
+        plt.imshow(self.occ_map, cmap='gray', vmin=0, vmax=1)
+        if home_pixel is not None:
+            plt.scatter([home_pixel[1]], [home_pixel[0]], c='red', s=120, marker='x', linewidths=2.5)
+        plt.colorbar(label='Occupancy (0=Free, 1=Occupied)')
+        plt.axis('off')
+        
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=150)
+        print(f"✅ Occupancy map saved to {save_path}")
+        plt.show()
+        
+        # ================= 打印统计信息 =================
+        total_pixels = self.occ_map.size
+        free_pixels = np.sum(self.occ_map == 0)
+        occ_pixels = np.sum(self.occ_map == 1)
+        print(f"\n=== Occupancy Map Statistics ===")
+        print(f"Total pixels: {total_pixels}")
+        print(f"Free space (0): {free_pixels} ({free_pixels/total_pixels*100:.2f}%)")
+        print(f"Occupied (1): {occ_pixels} ({occ_pixels/total_pixels*100:.2f}%)")
+        print(f"Map bounds: rows [0-{self.occ_map.shape[0]}], cols [0-{self.occ_map.shape[1]}]")
+        
+        if home_pixel is not None:
+            hp_val = self.occ_map[home_pixel[0], home_pixel[1]]
+            print(f"Home pixel {home_pixel} value: {hp_val} (0=Free, 1=Occupied)")
+
     def step1_preprocess(self, home_pixel):
         print("Step 1: Preprocessing map...")
         self.home_pixel = tuple(home_pixel)
@@ -121,7 +174,7 @@ class MapPartitioner:
         self.free_mask = (labeled_array == labeled_array[self.home_pixel]).astype(np.uint8)
         print(f"  -> Extracted reachable free space. Pixels: {np.sum(self.free_mask)}")
 
-    def step2_find_seeds(self, phys_peak_distance=0.6):
+    def step2_find_seeds(self, phys_peak_distance=0.3):
         """
         第二步：潜在积木区域预测 (寻找种子点)
         
@@ -349,6 +402,7 @@ class MapPartitioner:
 
     def process(self, home_pixel):
         """执行完整流水线"""
+        self.visualize_occ_map(home_pixel)
         self.step1_preprocess(home_pixel)
         self.step2_find_seeds()
         self.step3_voronoi_partition()
@@ -364,7 +418,7 @@ class MapPartitioner:
         # 创建彩色背景：黑(占用)，灰(未知)，白(自由)
         vis_img = np.ones((self.free_mask.shape[0], self.free_mask.shape[1], 3), dtype=np.uint8) * 255
         vis_img[self.occ_map == 1] = (0, 0, 0)
-        vis_img[self.unknown_mask] = (128, 128, 128)
+        # vis_img[self.unknown_mask] = (128, 128, 128)
         
         # 给分区上色
         # 生成随机但高对比度的颜色
@@ -396,6 +450,14 @@ class MapPartitioner:
                 f.write(f"{wx:.3f} {wy:.3f}\n")
                 
         print("Done!")
+
+    def world_to_pixel(self, wx, wy):
+        # 注意：此函数需要在 _load_map 之后调用，因为需要图像高度
+        dx = wx - self.origin[0]
+        dy = wy - self.origin[1]
+        px = int(dx / self.resolution)
+        py = int(self.occ_map.shape[0] - (dy / self.resolution))
+        return (py, px)
 
 import matplotlib.pyplot as plt
 
@@ -447,6 +509,8 @@ def visualize_step2_details(self, phys_peak_distance=0.6):
     plt.tight_layout()
     plt.show()
 
+
+
 # 在主程序中调用
 # partitioner.step1_preprocess(home_pixel=(80, 80))
 # visualize_step2_details(partitioner, phys_peak_distance=0.6)
@@ -456,7 +520,7 @@ if __name__ == "__main__":
     # 假设你有一个ROS格式的地图文件
     # 请将 'my_map.yaml' 替换为你的实际文件路径
     
-    yaml_file = 'sim/sample_map.yaml'
+    yaml_file = 'map/livingroom_clean_12.yaml'
     
     # 初始化分区器 (参数可调)
     # inflation_radius: 机器人安全半径/栅格分辨率
@@ -464,16 +528,21 @@ if __name__ == "__main__":
     # merge_cost_threshold: 控制最终区域数量的阈值，越小区域越多，越大区域越少
     partitioner = MapPartitioner(
         yaml_path=yaml_file, 
-        inflation_radius=5, 
-        min_area=600,
+        inflation_radius=3, 
+        min_area=300,
         alpha=1.0, 
         beta=0.002, 
-        merge_cost_threshold=1.2 
+        merge_cost_threshold=2.0
     )
-    
+    # home_world_x = partitioner.origin[0]
+    # home_world_y = partitioner.origin[1]
     # 设置 Home 点 (像素坐标: 行, 列)
     # 通常在地图底部中间找一块空地
-    home_py, home_px = 80, 80 
+    # home_py, home_px = partitioner.world_to_pixel(home_world_x + 0.5, home_world_y + 0.5)
+    home_py, home_px = 200, 78 
+
+    print(f"Origin from YAML: {partitioner.origin[:2]}")
+    print(f"Calculated Home Pixel: {home_py, home_px}")
     
     # 运行算法
     centers = partitioner.process(home_pixel=(home_py, home_px))
