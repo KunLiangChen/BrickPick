@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://playerstage.sourceforge.net/gazebo/xmlschema/#xacro">
+
+    <!-- 定义雷达宏 -->
+    <!-- parent_link: 指定父级链接 (例如 base2_link) -->
+    <!-- xyz_offset: 指定相对于父级的偏移 (例如 '0 0 0.2') -->
+    <xacro:macro name="lidar" params="tf_prefix:='' parent_link:='' xyz_offset:='0 0 0'">
+        
+        <!-- 1. 隐形支架 (Mount) -->
+        <!-- 这个 Link 用于物理连接，但去掉了 visual 标签，所以你看不到黑柱子 -->
+        <link name="${tf_prefix}lidar_mount_link">
+            <!-- 视觉部分已删除，柱子消失 -->
+            
+            <!-- 保留碰撞体积，防止仿真中穿模，半径设小一点作为隐形杆 -->
+            <collision>
+                <origin xyz="0 0 0.1" rpy="0 0 0"/>
+                <geometry>
+                    <cylinder radius="0.01" length="0.2"/>
+                </geometry>
+            </collision>
+            <inertial>
+                <mass value="0.1"/>
+                <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+            </inertial>
+        </link>
+
+        <!-- 2. 雷达本体 (Lidar Body) -->
+        <!-- 这里的名字改为了 laser_frame -->
+        <link name="${tf_prefix}laser_frame">
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <geometry>
+                    <!-- 缩放 0.001 适配毫米级模型 -->
+                    <mesh filename="package://robomaster_description/meshes/lidar.dae" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="metal"/>
+            </visual>
+            <collision>
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <geometry>
+                    <!-- 简单的圆柱体碰撞 -->
+                    <cylinder radius="0.05" length="0.05"/>
+                </geometry>
+            </collision>
+            <inertial>
+                <mass value="0.15"/>
+                <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+            </inertial>
+        </link>
+
+        <!-- 3. 关节：连接 支架 -> 父级 (base2) -->
+        <joint name="${tf_prefix}lidar_mount_joint" type="fixed">
+            <origin xyz="${xyz_offset}" rpy="0 0 0"/>
+            <parent link="${parent_link}"/>
+            <child link="${tf_prefix}lidar_mount_link"/>
+        </joint>
+
+        <!-- 4. 关节：连接 雷达(laser_frame) -> 支架 -->
+        <!-- 支架高度 0.2，中心在 0.1，所以顶端 Z 偏移是 0.1 -->
+        <joint name="${tf_prefix}laser_frame_joint" type="fixed">
+            <origin xyz="0 0 0.105" rpy="0 0 0"/>
+            <parent link="${tf_prefix}lidar_mount_link"/>
+            <child link="${tf_prefix}laser_frame"/>
+        </joint>
+
+    </xacro:macro>
+</robot>

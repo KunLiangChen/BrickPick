@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://playerstage.sourceforge.net/gazebo/xmlschema/#xacro">
+
+    <!-- 定义 base2 部件的宏 -->
+    <xacro:macro name="base2" params="tf_prefix:='' z_offset:=0.16 x_offset:=0.03">
+        <!-- 注意：这里将 z_offset 的默认值改为了 0.05 -->
+
+        <!-- 1. 定义 base2 的 Link -->
+        <link name="${tf_prefix}base2_link">
+            <inertial>
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <mass value="0.1"/>
+                <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+            </inertial>
+
+            <!-- 视觉外观 -->
+            <visual name="base2_visual">
+                <!-- 
+                   rpy="1.57 0 3.14159" 表示：
+                   1.57 (Roll): 绕 X 轴旋转 90度
+                   0 (Pitch): 绕 Y 轴不旋转
+                   3.14159 (Yaw): 绕 Z 轴旋转 180度
+                -->
+                <origin xyz="0 0 0" rpy="1.57 0 4.71"/>
+                <geometry>
+                    <!-- 保持与 base1 相同的缩放比例 -->
+                    <mesh filename="package://robomaster_description/meshes/base2.dae" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="led_light"/>
+            </visual>
+
+            <!-- 碰撞模型 -->
+            <collision name="base2_collision">
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <geometry>
+                    <!-- 碰撞盒大小，与 base1 保持一致 -->
+                    <box size="0.1 0.1 0.02"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <!-- 2. 定义 Joint 将 base2_link 连接到 base1_link -->
+        <joint name="${tf_prefix}base2_joint" type="fixed">
+            <!-- xyz="x y z" -> x 设为变量，y 为 0，z 设为变量 -->
+            <origin xyz="${x_offset} 0 ${z_offset}" rpy="0 0 0"/>
+            <parent link="${tf_prefix}base1_link"/>
+            <child link="${tf_prefix}base2_link"/>
+        </joint>
+
+    </xacro:macro>
+
+</robot>
