@@ -340,45 +340,102 @@ class MapPartitioner:
         print(f"  -> Merged into {self.final_num_regions} final regions (Respecting {self.max_region_radius}m radius limit).")
     
     def step5_calculate_centers(self):
-        """第五步：计算可达中心点"""
-        print("Step 5: Calculating reachable centers...")
+        """第五步：计算可达中心点，并求解连贯的巡回路径 (TSP 贪心最近邻)"""
+        print("Step 5: Calculating reachable centers and solving TSP...")
         self.reachable_centers = []
         regions_props = ndimage.find_objects(self.final_labels)
         
+        # 1. 先收集所有有效的候选中心点 (暂不排序)
+        raw_centers = []
         for sl in range(1, self.final_num_regions + 1):
             slice_obj = regions_props[sl-1]
+            if slice_obj is None: continue
             y_coords, x_coords = np.where(self.final_labels[slice_obj] == sl)
             
-            # 1. 计算几何中心 (质心)
             cy = int(np.mean(y_coords) + slice_obj[0].start)
             cx = int(np.mean(x_coords) + slice_obj[1].start)
             
-            # 2. 可达性验证
             path = self._astar(self.home_pixel, (cy, cx), self.free_mask)
-            if path is not None:
-                self.reachable_centers.append((cy, cx))
-            else:
-                # 3. 修正：沿 Home 到中心点的方向线回退搜索
+            
+            if path is None:
                 direction_y = cy - self.home_pixel[0]
                 direction_x = cx - self.home_pixel[1]
                 length = math.sqrt(direction_y**2 + direction_x**2)
-                if length == 0: continue
+                if length > 0:
+                    for step in np.linspace(0, length, num=int(length)):
+                        test_y = int(self.home_pixel[0] + (direction_y / length) * step)
+                        test_x = int(self.home_pixel[1] + (direction_x / length) * step)
+                        test_y, test_x = self._clamp_to_free(test_y, test_x)
+                        
+                        if self.final_labels[test_y, test_x] == sl:
+                            test_path = self._astar(self.home_pixel, (test_y, test_x), self.free_mask)
+                            if test_path is not None:
+                                path = test_path
+                                cy, cx = test_y, test_x
+                                break
+            
+            if path is not None:
+                raw_centers.append((cy, cx))
+            else:
+                print(f"    -> Warning: Region {sl} center unreachable, skipped.")
+
+        n = len(raw_centers)
+        if n == 0:
+            return
+
+        # ================= 核心新增：贪心 TSP =================
+        print(f"  -> Found {n} valid centers. Calculating pairwise distances for TSP...")
+        
+        # 2. 构建点对点距离矩阵 (N x N)
+        dist_matrix = [[0.0] * n for _ in range(n)]
+        for i in range(n):
+            for j in range(i + 1, n):
+                path = self._astar(raw_centers[i], raw_centers[j], self.free_mask)
+                d = len(path) if path else float('inf')
+                dist_matrix[i][j] = d
+                dist_matrix[j][i] = d
                 
-                found = False
-                for step in np.linspace(0, length, num=int(length)):
-                    test_y = int(self.home_pixel[0] + (direction_y / length) * step)
-                    test_x = int(self.home_pixel[1] + (direction_x / length) * step)
-                    test_y, test_x = self._clamp_to_free(test_y, test_x)
+        # 3. 计算 Home 到所有点的距离
+        home_dists = []
+        for i in range(n):
+            path = self._astar(self.home_pixel, raw_centers[i], self.free_mask)
+            home_dists.append(len(path) if path else float('inf'))
+            
+        # 4. 执行最近邻贪心搜索 (从 Home 出发)
+        visited = [False] * n
+        ordered_centers = []
+        current_idx = -1  # -1 表示当前在 Home
+        total_path_cost = 0
+        
+        for _ in range(n):
+            best_next_idx = -1
+            best_next_dist = float('inf')
+            
+            # 寻找离当前点最近的未访问点
+            for i in range(n):
+                if visited[i]:
+                    continue
                     
-                    # 确保测试点仍然在当前区域内
-                    if self.final_labels[test_y, test_x] == sl:
-                        test_path = self._astar(self.home_pixel, (test_y, test_x), self.free_mask)
-                        if test_path is not None:
-                            self.reachable_centers.append((test_y, test_x))
-                            found = True
-                            break
-                if not found:
-                    print(f"    -> Warning: Region {sl} center unreachable, skipped.")
+                if current_idx == -1:  # 当前在Home
+                    d = home_dists[i]
+                else:                 # 当前在某个中心点
+                    d = dist_matrix[current_idx][i]
+                    
+                if d < best_next_dist:
+                    best_next_dist = d
+                    best_next_idx = i
+                    
+            if best_next_idx == -1:
+                break  # 防止意外死循环
+                
+            visited[best_next_idx] = True
+            ordered_centers.append(raw_centers[best_next_idx])
+            total_path_cost += best_next_dist
+            current_idx = best_next_idx  # 移动到下一个点
+            
+        self.reachable_centers = ordered_centers
+        print(f"  -> TSP routing complete. Total estimated path cost: {total_path_cost:.0f} pixels.")
+        # ===============================================
 
     def _clamp_to_free(self, y, x):
         """将越界或落在障碍物上的点修正到最近的自由空间点"""
@@ -437,9 +494,13 @@ class MapPartitioner:
         cv2.circle(vis_img, (self.home_pixel[1], self.home_pixel[0]), 6, (0, 255, 0), -1)
         
         # 画可达中心点 (红色，带十字)
-        for cy, cx in self.reachable_centers:
+        # 在 save_results 方法中，绘制中心点的地方修改：
+        for i, (cy, cx) in enumerate(self.reachable_centers):
+            # 画标记
             cv2.drawMarker(vis_img, (cx, cy), (0, 0, 255), markerType=cv2.MARKER_CROSS, markerSize=15, thickness=2)
-            
+            # 新增：在坐标旁边写上序号 (0, 1, 2...)
+            cv2.putText(vis_img, str(i), (cx + 5, cy - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+        
         cv2.imwrite(output_img_path, vis_img)
         
         # 2. 保存坐标 (世界坐标系)
@@ -539,7 +600,7 @@ if __name__ == "__main__":
     # 设置 Home 点 (像素坐标: 行, 列)
     # 通常在地图底部中间找一块空地
     # home_py, home_px = partitioner.world_to_pixel(home_world_x + 0.5, home_world_y + 0.5)
-    home_py, home_px = 200, 78 
+    home_py, home_px = 288, 48 
 
     print(f"Origin from YAML: {partitioner.origin[:2]}")
     print(f"Calculated Home Pixel: {home_py, home_px}")
