@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://playerstage.sourceforge.net/gazebo/xmlschema/#xacro">
+
+    <!-- 定义电池盒宏 -->
+    <!-- 新增 rpy_offset 参数，用于控制旋转 -->
+    <xacro:macro name="battery_box" params="tf_prefix:='' parent_link:='' xyz_offset:='-0.08 0 0' rpy_offset:='0 0 0'">
+
+        <!-- 1. 电池盒本体 Link -->
+        <link name="${tf_prefix}battery_box_link">
+            
+            <!-- 视觉部分 -->
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <geometry>
+                    <!-- 修改点 1：scale 改为 0.001，大幅缩小模型 -->
+                    <mesh filename="package://robomaster_description/meshes/battery_box.dae" scale="0.001 0.001 0.001"/>
+                </geometry>
+                <material name="dark_plastic"/>
+            </visual>
+
+            <!-- 碰撞部分 -->
+            <collision>
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <geometry>
+                    <!-- 修改点 2：缩小碰撞盒尺寸 (长8cm, 宽4cm, 高2cm) -->
+                    <box size="0.08 0.04 0.02"/>
+                </geometry>
+            </collision>
+
+            <!-- 惯性参数 -->
+            <inertial>
+                <mass value="0.2"/>
+                <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+            </inertial>
+        </link>
+
+        <!-- 2. 连接关节 -->
+        <joint name="${tf_prefix}battery_box_joint" type="fixed">
+            <!-- 修改点 3：应用传入的 xyz_offset 和 rpy_offset -->
+            <origin xyz="${xyz_offset}" rpy="${rpy_offset}"/>
+            <parent link="${parent_link}"/>
+            <child link="${tf_prefix}battery_box_link"/>
+        </joint>
+
+    </xacro:macro>
+</robot>
