@@ -6,6 +6,8 @@
 #include "brickpick/arm_action.hpp"
 #include "brickpick/nav_to_indexed_pose_client.hpp"
 #include "brickpick/has_next_center_point.hpp"
+#include "brickpick/reading_region.hpp" 
+#include "brickpick/increment_index.hpp"
 // #include "brickpick/"
 #include <chrono>
 #include <thread>
