@@ -3,6 +3,7 @@
 
 #include "behaviortree_cpp/condition_node.h"
 #include <vector>
+#include <rclcpp/rclcpp.hpp>
 #include <utility> // for std::pair
 
 class HasNextCenterPoint : public BT::ConditionNode

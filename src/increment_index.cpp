@@ -1,5 +1,5 @@
 // increment_index.cpp
-#include "increment_index.hpp"
+#include "brickpick/increment_index.hpp"
 
 IncrementIndex::IncrementIndex(const std::string& name, const BT::NodeConfiguration& config)
     : BT::SyncActionNode(name, config)

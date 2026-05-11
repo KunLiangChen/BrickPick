@@ -1,4 +1,4 @@
-#include "nav_to_indexed_pose_client.hpp"
+#include "brickpick/nav_to_indexed_pose_client.hpp"
 
 NavToIndexedPoseClient::NavToIndexedPoseClient(const std::string &name, const BT::NodeConfiguration &config)
     : BT::AsyncActionNode(name, config)

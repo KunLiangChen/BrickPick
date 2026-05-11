@@ -4,7 +4,7 @@
 #include "brickpick/find_action.hpp"
 #include "brickpick/approach_action.hpp"
 #include "brickpick/arm_action.hpp"
-#include "brickpick/nav_to_next_center_point.hpp"
+#include "brickpick/nav_to_indexed_pose_client.hpp"
 #include "brickpick/has_next_center_point.hpp"
 // #include "brickpick/"
 #include <chrono>
@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
     BT::Tree tree;
     try {
         tree = factory.createTreeFromFile(xml_path);
-        // tree.rootBlackboard()->set<rclcpp::Node::SharedPtr>("node", executor_node);
+        tree.rootBlackboard()->set<rclcpp::Node::SharedPtr>("node", executor_node);
         RCLCPP_INFO(executor_node->get_logger(), "成功加载 BT XML %s", xml_path.c_str());
     } catch (const std::exception& e) {
         RCLCPP_ERROR(executor_node->get_logger(), "加载 BT XML 失败: %s", e.what());

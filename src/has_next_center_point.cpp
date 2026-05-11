@@ -1,5 +1,5 @@
 // has_next_center_point.cpp
-#include "has_next_center_point.hpp"
+#include "brickpick/has_next_center_point.hpp"
 
 // ---------------------- 构造函数实现 ----------------------
 HasNextCenterPoint::HasNextCenterPoint(const std::string& name, const BT::NodeConfiguration& config)
@@ -18,6 +18,8 @@ BT::PortsList HasNextCenterPoint::providedPorts()
 // ---------------------- 核心逻辑实现 ----------------------
 BT::NodeStatus HasNextCenterPoint::tick()
 {
+    auto node = config().blackboard->get<rclcpp::Node::SharedPtr>("node");
+    auto logger = node->get_logger();
     // 1. 从端口安全地获取数据
     BT::Expected<int> index_opt = getInput<int>("current_index");
     BT::Expected<std::vector<std::pair<double, double>>> regions_opt = 
@@ -26,7 +28,7 @@ BT::NodeStatus HasNextCenterPoint::tick()
     // 2. 检查数据是否有效
     if (!index_opt || !regions_opt)
     {
-        BT_ROS_ERROR("HasNextCenterPoint: Missing or invalid input port!");
+        RCLCPP_ERROR(logger,"HasNextCenterPoint: Missing or invalid input port!");
         return BT::NodeStatus::FAILURE;
     }
 
@@ -41,7 +43,7 @@ BT::NodeStatus HasNextCenterPoint::tick()
     }
 
     // 已经越界，说明所有点都遍历完了
-    BT_ROS_INFO("HasNextCenterPoint: Reached the end. Index: %d, Total: %zu", 
-                current_index, total_regions);
+    RCLCPP_INFO(logger, "HasNextCenterPoint: Reached the end. Index: %d, Total: %zu", 
+            current_index, total_regions);
     return BT::NodeStatus::FAILURE;
 }

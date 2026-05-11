@@ -55,8 +55,10 @@ add_executable(bt_executor
   src/find_action.cpp
   src/approach_action.cpp
   src/arm_action.cpp
-  src/navigate_to_subregion_center.cpp
+  src/nav_to_indexed_pose_client.cpp
   src/reading_region.cpp
+  src/has_next_center_point.cpp
+  src/increment_index.cpp
 )
 
 # 包含头文件目录（含 BT 和当前包）
