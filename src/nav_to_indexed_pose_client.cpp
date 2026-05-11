@@ -1,14 +1,14 @@
 #include "brickpick/nav_to_indexed_pose_client.hpp"
 
 NavToIndexedPoseClient::NavToIndexedPoseClient(const std::string &name, const BT::NodeConfiguration &config)
-    : BT::AsyncActionNode(name, config)
+    : BT::StatefulActionNode(name, config)
 {
     // 创建一个独立于 Nav2 的 ROS2 节点，专门用于发送 Action
     node_ = std::make_shared<rclcpp::Node>("nav_to_indexed_pose_client");
     action_client_ = rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(node_, "navigate_to_pose");
 }
 
-BT::NodeStatus NavToIndexedPoseClient::on_start()
+BT::NodeStatus NavToIndexedPoseClient::onStart()
 {
     // 1. 读取黑板数据
     BT::Expected<int> index_opt = getInput<int>("current_index");
@@ -59,7 +59,7 @@ BT::NodeStatus NavToIndexedPoseClient::on_start()
     return BT::NodeStatus::RUNNING;
 }
 
-BT::NodeStatus NavToIndexedPoseClient::on_running()
+BT::NodeStatus NavToIndexedPoseClient::onRunning()
 {
     // 这个函数会在一个后台线程中不断被调用
     // 我们检查 future 的状态，如果 Nav2 还没回复，这里会非阻塞地立刻返回 RUNNING
@@ -80,7 +80,7 @@ BT::NodeStatus NavToIndexedPoseClient::on_running()
     return BT::NodeStatus::RUNNING;
 }
 
-void NavToIndexedPoseClient::on_halted()
+void NavToIndexedPoseClient::onHalted()
 {
     // 如果树因为某种原因被中断了（比如用户按了停止，或者更上层的节点失败了），
     // 必须手动取消 Nav2 的目标，否则机器人会一直往前跑！

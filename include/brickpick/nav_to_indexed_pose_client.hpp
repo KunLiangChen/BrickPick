@@ -14,8 +14,7 @@
 class NavToIndexedPoseClient : public BT::StatefulActionNode
 {
 public:
-    NavToIndexedPoseClient(const std::string &name, const BT::NodeConfiguration &config)
-        : BT::StatefulActionNode(name, config)
+    NavToIndexedPoseClient(const std::string &name, const BT::NodeConfiguration &config); // 注意结尾是分号
 
     static BT::PortsList providedPorts()
     {
@@ -29,13 +28,13 @@ public:
 private:
     // AsyncActionNode 必须实现的三个方法：
     // 1. 节点第一次被 tick 时调用
-    BT::NodeStatus on_start() override;
+    BT::NodeStatus onStart() override;
 
     // 2. 节点返回 RUNNING 期间，会在后台线程不断循环调用
-    BT::NodeStatus on_running() override;
+    BT::NodeStatus onRunning() override;
 
     // 3. 如果树被外部强行中止（比如父节点失败），调用此方法取消导航
-    void on_halted() override;
+    void onHalted() override;
 
     // ROS2 相关成员变量
     rclcpp::Node::SharedPtr node_;
