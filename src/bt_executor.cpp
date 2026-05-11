@@ -28,6 +28,8 @@ int main(int argc, char** argv) {
     factory.registerNodeType<BT::ArmAction>("ExecuteArmSequence");
     factory.registerNodeType<NavToIndexedPoseClient>("NavToIndexedPoseClient");
     factory.registerNodeType<HasNextCenterPoint>("HasNextCenterPoint");
+    factory.registerNodeType<ReadRegionCenters>("ReadRegionCenters");
+    factory.registerNodeType<IncrementIndex>("IncrementIndex");
     // 🔹 3. 从 XML 构建树
     BT::Tree tree;
     try {
