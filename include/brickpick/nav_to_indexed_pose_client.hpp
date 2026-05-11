@@ -11,10 +11,11 @@
 #include "nav2_msgs/action/navigate_to_pose.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 
-class NavToIndexedPoseClient : public BT::AsyncActionNode
+class NavToIndexedPoseClient : public BT::StatefulActionNode
 {
 public:
-    NavToIndexedPoseClient(const std::string &name, const BT::NodeConfiguration &config);
+    NavToIndexedPoseClient(const std::string &name, const BT::NodeConfiguration &config)
+        : BT::StatefulActionNode(name, config)
 
     static BT::PortsList providedPorts()
     {
