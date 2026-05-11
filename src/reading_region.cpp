@@ -1,10 +1,10 @@
-// include necessary headers
 #include "behaviortree_cpp/bt_factory.h"
-#include "behaviortree_cpp/action_node.h"
+#include <rclcpp/rclcpp.hpp>
 #include <fstream>
 #include <string>
 #include <vector>
-#include <utility> // for std::pair
+#include <utility>
+#include <optional>
 
 class ReadRegionCenters : public BT::SyncActionNode
 {
@@ -13,40 +13,58 @@ public:
         : BT::SyncActionNode(name, config)
     {}
 
-    // 这个节点不需要任何端口，直接操作黑板
-    static BT::PortsList providedPorts() { return {}; }
+    // 关键改进：声明输出端口
+    static BT::PortsList providedPorts()
+    {
+        return {
+            BT::OutputPort<std::vector<std::pair<double, double>>>("regions"),
+            BT::OutputPort<int>("current_index")
+        };
+    }
 
     BT::NodeStatus tick() override
     {
-        // 1. 获取黑板指针（通过config().blackboard）
-        auto blackboard = config().blackboard;
+        // 1. 准备输出数据
+        std::vector<std::pair<double, double>> regions;
+        int current_index = 0;
 
         // 2. 打开并读取文件
         std::ifstream file("./map/region_centers.txt");
         if (!file.is_open()) {
-            BT_ROS_ERROR("Could not open file: ./map/region_centers.txt");
+            RCLCPP_ERROR(rclcpp::get_logger("ReadRegionCenters"), "无法打开文件: ./map/region_centers.txt");
             return BT::NodeStatus::FAILURE;
         }
 
-        std::vector<std::pair<double, double>> regions;
         std::string line;
+        bool data_found = false;
 
         // 跳过注释行
         std::getline(file, line);
 
         while (std::getline(file, line)) {
-            if (line.empty()) continue;
+            if (line.empty() || line[0] == '#') continue; // 跳过空行和注释
+
             double x, y;
             if (sscanf(line.c_str(), "%lf %lf", &x, &y) == 2) {
                 regions.emplace_back(x, y);
+                data_found = true;
+            } else {
+                RCLCPP_WARN(rclcpp::get_logger("ReadRegionCenters"), "无法解析行: %s", line.c_str());
             }
         }
 
-        // 3. 将数据存入黑板
-        blackboard->set("regions", regions);
-        blackboard->set("current_index", 0); // 初始化索引为0
+        // 3. 检查是否读取到有效数据
+        if (!data_found) {
+            RCLCPP_ERROR(rclcpp::get_logger("ReadRegionCenters"), "文件中未找到有效的区域坐标数据。");
+            return BT::NodeStatus::FAILURE;
+        }
 
-        BT_ROS_INFO("Successfully loaded %zu region centers into blackboard.", regions.size());
+        // 4. 将数据通过输出端口设置到黑板
+        // setOutput 方法会自动处理端口与黑板键的映射【turn0search3】
+        setOutput("regions", regions);
+        setOutput("current_index", current_index);
+
+        RCLCPP_INFO(rclcpp::get_logger("ReadRegionCenters"), "成功加载 %zu 个区域中心到黑板。", regions.size());
         return BT::NodeStatus::SUCCESS;
     }
 };

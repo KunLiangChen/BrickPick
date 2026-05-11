@@ -56,6 +56,7 @@ add_executable(bt_executor
   src/approach_action.cpp
   src/arm_action.cpp
   src/navigate_to_subregion_center.cpp
+  src/reading_region.cpp
 )
 
 # 包含头文件目录（含 BT 和当前包）
