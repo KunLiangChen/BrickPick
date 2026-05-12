@@ -1,49 +1,46 @@
 #pragma once
 
-#include <string>
-#include <vector>
-#include <utility>
+#include <behaviortree_cpp/action_node.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <nav2_msgs/action/navigate_to_pose.hpp>
+#include <thread>
 #include <future>
-
-#include "behaviortree_cpp/action_node.h"
-#include "rclcpp/rclcpp.hpp"
-#include "rclcpp_action/rclcpp_action.hpp"
-#include "nav2_msgs/action/navigate_to_pose.hpp"
-#include "geometry_msgs/msg/pose_stamped.hpp"
+#include <atomic>
 
 class NavToIndexedPoseClient : public BT::StatefulActionNode
 {
 public:
-    NavToIndexedPoseClient(const std::string &name, const BT::NodeConfiguration &config); // 注意结尾是分号
+    NavToIndexedPoseClient(const std::string &name, const BT::NodeConfiguration &config);
+    ~NavToIndexedPoseClient() override;
 
-    static BT::PortsList providedPorts()
-    {
+    static BT::PortsList providedPorts() {
         return {
             BT::InputPort<int>("current_index"),
             BT::InputPort<std::vector<std::pair<double, double>>>("regions"),
-            BT::InputPort<std::string>("frame_id", "map")
+            BT::InputPort<std::string>("frame_id")
         };
     }
 
-private:
-    // AsyncActionNode 必须实现的三个方法：
-    // 1. 节点第一次被 tick 时调用
     BT::NodeStatus onStart() override;
-
-    // 2. 节点返回 RUNNING 期间，会在后台线程不断循环调用
     BT::NodeStatus onRunning() override;
-
-    // 3. 如果树被外部强行中止（比如父节点失败），调用此方法取消导航
     void onHalted() override;
 
-    // ROS2 相关成员变量
+private:
+    // ROS 2 节点与 Action Client
     rclcpp::Node::SharedPtr node_;
     rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SharedPtr action_client_;
+    
+    // 保存 Goal Handle 用于取消任务
+    using GoalHandle = rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>;
+    std::shared_ptr<GoalHandle> goal_handle_;
 
-    // 用于接收 Nav2 最终结果的机制 (Promise/Future)
+    // 异步结果接收
     std::shared_ptr<std::promise<rclcpp_action::ResultCode>> result_promise_;
     std::shared_future<rclcpp_action::ResultCode> result_future_;
 
-    // 保存 GoalHandle，以便在 on_halted() 中取消目标
-    rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>::SharedPtr goal_handle_;
+    // 生命周期管理：独立执行器与后台线程
+    rclcpp::executors::SingleThreadedExecutor executor_;
+    std::thread spinner_thread_;
+    std::atomic<bool> is_spinning_;
 };
