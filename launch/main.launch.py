@@ -65,9 +65,9 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        vision_node,
+        # vision_node,
         # find_node,
         # approach_node,
-        arm_node,
+        # arm_node,
         bt_executor_node
     ])

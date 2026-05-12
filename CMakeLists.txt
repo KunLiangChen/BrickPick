@@ -36,7 +36,9 @@ install(PROGRAMS
 )
 
 # 安装 launch 文件
-install(DIRECTORY launch
+install(DIRECTORY 
+  launch
+  map
   DESTINATION share/${PROJECT_NAME}/
 )
 

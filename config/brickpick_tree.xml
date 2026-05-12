@@ -1,20 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<root BTCPP_format="4"
-      main_tree_to_execute="MainTree">
+<root main_tree_to_execute="MainTree">
+    
+    <BehaviorTree ID="MainTree">
+        <Sequence name="Root">
 
-  <BehaviorTree ID="MainTree">
-    <Sequence name="ArmOnlySequence">
-      <ExecuteArmSequence name="arm"
-                          timeout="10.0"/>
-    </Sequence>
-  </BehaviorTree>
+            <ReadRegionCenters regions="{regions}" current_index="{current_index}"/>
 
-  <!-- Description of Node Models (used by Groot) -->
-  <TreeNodesModel>
-    <Action ID="ExecuteArmSequence">
-      <input_port name="timeout"
-                  default="10.0">机械臂动作序列超时时间（秒）</input_port>
-    </Action>
-  </TreeNodesModel>
+            <KeepRunningUntilFailure name="ProcessAllCenters">
 
+                <Sequence name="ProcessOneCenter">
+
+                    <HasNextCenterPoint current_index="{current_index}" regions="{regions}"/>
+
+                    <NavToIndexedPoseClient current_index="{current_index}" regions="{regions}" frame_id="map"/>
+
+                    <IncrementIndex current_index="{current_index}"/>
+
+                </Sequence>
+
+            </KeepRunningUntilFailure>
+
+        </Sequence>
+    </BehaviorTree>
+
+    <TreeNodesModel>
+        <Action ID="ReadRegionCenters">
+            <output_port name="regions">Vector of region coordinates</output_port>
+            <output_port name="current_index">Starting index (default 0)</output_port>
+        </Action>
+
+        <Condition ID="HasNextCenterPoint">
+            <input_port name="current_index">Current index to check</input_port>
+            <input_port name="regions">Vector of region coordinates</input_port>
+        </Condition>
+
+        <Action ID="NavToIndexedPoseClient">
+            <input_port name="current_index">Index of the target pose</input_port>
+            <input_port name="regions">Vector of region coordinates</input_port>
+            <input_port name="frame_id" default="map">Frame ID for navigation</input_port>
+        </Action>
+
+        <Action ID="IncrementIndex">
+            <inout_port name="current_index">Index to increment</inout_port>
+        </Action>
+    </TreeNodesModel>
 </root>
