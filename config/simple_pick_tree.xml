@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4" main_tree_to_execute="MainTree">
+    <BehaviorTree ID="MainTree">
+        <Sequence name="BasicPickupSequence">
+            <FindObject timeout="15.0"/>
+            
+            <ApproachObject timeout="10.0"/>
+            
+            <ExecuteArmSequence timeout="15.0"/>
+        </Sequence>
+    </BehaviorTree>
+
+    <TreeNodesModel>
+        <Action ID="FindObject">
+            <input_port name="timeout" default="15.0">Timeout in seconds</input_port>
+        </Action>
+        <Action ID="ApproachObject">
+            <input_port name="timeout" default="10.0">Timeout in seconds</input_port>
+        </Action>
+        <Action ID="ExecuteArmSequence">
+            <input_port name="timeout" default="15.0">Timeout in seconds</input_port>
+        </Action>
+    </TreeNodesModel>
+</root>
