@@ -10,7 +10,7 @@ def generate_launch_description():
     vision_config = PathJoinSubstitution([pkg_dir, 'config', 'vision_params.yaml'])
     approach_config = PathJoinSubstitution([pkg_dir, 'config', 'approach_params.yaml'])
     arm_config      = PathJoinSubstitution([pkg_dir, 'config', 'arm_presets.yaml'])
-    bt_xml_path     = PathJoinSubstitution([pkg_dir, 'config', 'brickpick_tree.xml'])
+    bt_xml_path     = PathJoinSubstitution([pkg_dir, 'config', 'simple_pick_tree.xml'])
     # arm_node = Node(
     #     package='brickpick',
     #     executable='arm_preset_node.py',

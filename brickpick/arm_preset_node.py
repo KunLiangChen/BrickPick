@@ -11,15 +11,15 @@ class EPPresetArmController(Node):
     def __init__(self):
         super().__init__('brickpick_arm_preset')
         self.declare_parameters(namespace='', parameters=[
-            ('presets.home.x', 0.0), ('presets.home.z', 0.0),
-            ('presets.forward.x', 0.15), ('presets.forward.z', 0.0),
+            ('presets.home.x', 0.0), ('presets.home.z', 0.6),
+            ('presets.forward.x', 0.14), ('presets.forward.z', 0.6),
             ('presets.down.x', 0.0), ('presets.down.z', -0.08),
             ('presets.backward.x', -0.05), ('presets.backward.z', 0.0),
             ('use_relative', False), ('goal_timeout', 5.0),
             ('position_limits.x.min', -0.06), ('position_limits.x.max', 0.18),
-            ('position_limits.z.min', -0.12), ('position_limits.z.max', 0.05),
+            ('position_limits.z.min', -0.12), ('position_limits.z.max', 0.06),
             ('emergency_stop_on_error', True),
-            ('default_sequence', ['home', 'forward', 'down', 'backward', 'home'])
+            ('default_sequence', ['home', 'forward', 'home'])
         ])
         self.presets = {k: {'x': self.get_parameter(f'presets.{k}.x').value, 
                             'z': self.get_parameter(f'presets.{k}.z').value} 
@@ -68,14 +68,14 @@ class EPPresetArmController(Node):
             x, z = pos['x'], pos['z']
             if not (self.limits['x']['min'] <= x <= self.limits['x']['max'] and
                     self.limits['z']['min'] <= z <= self.limits['z']['max']):
-                self.get_logger().warn(f"⚠️ 预设 '{name}' 超出限位: [{x},{z}]")
+                self.get_logger().warn(f" 预设 '{name}' 超出限位: [{x},{z}]")
 
     def _point_from_dict(self, d: dict) -> Point:
         return Point(x=float(d['x']), y=0.0, z=float(d['z']))
 
     def wait_for_server(self, timeout_sec=10.0):
         if not self._action_client.wait_for_server(timeout_sec):
-            self.get_logger().error("❌ move_arm Action 未就绪")
+            self.get_logger().error(" move_arm Action 未就绪")
             return False
         return True
 
