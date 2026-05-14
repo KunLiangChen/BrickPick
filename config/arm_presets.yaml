@@ -1,19 +1,19 @@
 # brickpick/config/arm_presets.yaml
-brickpick_arm_preset:
+arm_preset_node:
   ros__parameters:
     
     # ===== 动作预设（单位：米，相对于 arm_base_link） =====
-    presets.home.x: 0.0
-    presets.home.z: 0.06
+    presets.home.x: 0.088
+    presets.home.z: 0.151
 
-    presets.forward.x: 0.14
-    presets.forward.z: 0.06
+    presets.forward.x: 0.203
+    presets.forward.z: 0.061
 
     presets.down.x: 0.0
     presets.down.z: -0.08
 
-    presets.backward.x: -0.05
-    presets.backward.z: 0.0
+    presets.backward.x: 0.082
+    presets.backward.z: 0.061
     
     
     
@@ -24,11 +24,11 @@ brickpick_arm_preset:
     
     # ===== 安全限制 =====
     position_limits.x.min: -0.06
-    position_limits.x.max: 0.18
+    position_limits.x.max: 0.23
     position_limits.z.min: -0.12
-    position_limits.z.max: 0.06
+    position_limits.z.max: 0.23
 
     emergency_stop_on_error: true   # 动作失败时是否自动回 home
     
     # ===== 执行序列（可自定义顺序） =====
-    default_sequence: ["home", "forward", "home"]
+    default_sequence: ["home", "forward", "backward" ,"home"]

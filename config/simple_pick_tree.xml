@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<root BTCPP_format="4" main_tree_to_execute="DebugArmTree">
+<root BTCPP_format="4" main_tree_to_execute="MainTree">
     <BehaviorTree ID="MainTree">
         <Sequence name="BasicPickupSequence">
             <FindObject timeout="15.0"/>
@@ -13,7 +13,7 @@
     <BehaviorTree ID="DebugArmTree">
         <Sequence name="BasicPickupSequence">
             <ExecuteArmSequence timeout="15.0"/>
-            <ExecuteArmSequence timeout="15.0"/>
+            <!-- <ExecuteArmSequence timeout="15.0"/> -->
         </Sequence>
     </BehaviorTree>
 
