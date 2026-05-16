@@ -7,10 +7,10 @@ namespace BT {
 ApproachAction::ApproachAction(const std::string& name, const BT::NodeConfiguration& config)
     : BT::StatefulActionNode(name, config), request_sent_(false) {
     // 为 Action 创建独立的 ROS2 节点
-    int current_id = ++instance_counter_;
-    std::string node_name = "approach_action_ros_node_" + std::to_string(current_id);
+    // int current_id = ++instance_counter_;
+    // std::string node_name = "approach_action_ros_node_" + std::to_string(current_id);
     
-    node_ = rclcpp::Node::make_shared(node_name);
+    node_ = rclcpp::Node::make_shared(name);
     
     // 订阅 Python 节点的状态话题
     status_sub_ = node_->create_subscription<std_msgs::msg::String>(

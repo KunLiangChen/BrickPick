@@ -5,8 +5,8 @@ NavToIndexedPoseClient::NavToIndexedPoseClient(const std::string &name, const BT
 {
     // 1. 创建独立的 ROS 2 节点。
     // 建议节点名加上随机数或内存地址后缀，防止在行为树中实例化多个相同节点时发生命名冲突
-    std::string node_name = "nav_client_" + std::to_string(reinterpret_cast<uintptr_t>(this));
-    node_ = std::make_shared<rclcpp::Node>(node_name);
+    // std::string node_name = "nav_client_" + std::to_string(reinterpret_cast<uintptr_t>(this));
+    node_ = std::make_shared<rclcpp::Node>(name);
     action_client_ = rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(node_, "navigate_to_pose");
 
     // 2. 将节点加入 Executor，并启动后台线程进行 Spin

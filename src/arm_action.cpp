@@ -7,7 +7,7 @@ namespace BT {
 ArmAction::ArmAction(const std::string& name, const BT::NodeConfiguration& config)
     : BT::StatefulActionNode(name, config), request_sent_(false) {
     // 为 Action 创建独立的 ROS2 节点
-    node_ = rclcpp::Node::make_shared("arm_action_ros_node");
+    node_ = rclcpp::Node::make_shared(name);
     
     // 订阅 Python 节点的状态话题
     status_sub_ = node_->create_subscription<std_msgs::msg::String>(

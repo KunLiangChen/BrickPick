@@ -1,27 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root BTCPP_format="4" main_tree_to_execute="MainTree">
-    
     <BehaviorTree ID="MainTree">
         <Sequence name="Root">
-
             <ReadRegionCenters regions="{regions}" current_index="{current_index}"/>
 
             <ForceSuccess>
                 <KeepRunningUntilFailure name="ProcessAllCenters">
                     <Sequence name="ProcessOneCenter">
-
+                        
                         <HasNextCenterPoint current_index="{current_index}" regions="{regions}"/>
 
                         <ForceSuccess>
-                            <NavToIndexedPoseClient current_index="{current_index}" regions="{regions}" frame_id="map"/>
-                        </ForceSuccess>
+                            <KeepRunningUntilFailure name="CenterConfirmationLoop">
+                                <Sequence name="GlobalCheck">
+                                    
+                                    <NavToIndexedPoseClient current_index="{current_index}" regions="{regions}" frame_id="map"/>
+                                    
+                                    <FindObject name="find_global" timeout="15.0"/>
+                                    <ApproachObject name="approach_global" timeout="10.0"/>
+                                    <ExecuteArmSequence name="arm_global" timeout="15.0"/>
 
-                        <ForceSuccess>
-                            <KeepRunningUntilFailure name="ContinuousPickupMode">
-                                <Sequence name="PickupOneBlockAndRotate">
-                                    <FindObject timeout="15.0"/>
-                                    <ApproachObject timeout="10.0"/>
-                                    <ExecuteArmSequence timeout="15.0"/>
+                                    <ForceSuccess>
+                                        <KeepRunningUntilFailure name="LocalPickupLoop">
+                                            <Sequence name="LocalPickup">
+                                                <FindObject name="find_local" timeout="15.0"/>
+                                                <ApproachObject name="approach_local" timeout="10.0"/>
+                                                <ExecuteArmSequence name="arm_local" timeout="15.0"/>
+                                            </Sequence>
+                                        </KeepRunningUntilFailure>
+                                    </ForceSuccess>
+
                                 </Sequence>
                             </KeepRunningUntilFailure>
                         </ForceSuccess>
@@ -31,9 +39,6 @@
                     </Sequence>
                 </KeepRunningUntilFailure>
             </ForceSuccess>
-
-            <ReturnToStartPosition />
-
         </Sequence>
     </BehaviorTree>
 
@@ -54,7 +59,6 @@
         <Action ID="IncrementIndex">
             <inout_port name="current_index">Index to increment</inout_port>
         </Action>
-
         <Action ID="FindObject">
             <input_port name="timeout" default="15.0">Timeout in seconds</input_port>
         </Action>
@@ -64,7 +68,6 @@
         <Action ID="ExecuteArmSequence">
             <input_port name="timeout" default="15.0">Timeout in seconds</input_port>
         </Action>
-
-        <!-- <Action ID="ReturnToStartPosition"/> -->
+        <Action ID="ReturnToStartPosition"/>
     </TreeNodesModel>
 </root>

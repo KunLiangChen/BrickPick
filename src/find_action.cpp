@@ -7,7 +7,7 @@ namespace BT {
 FindAction::FindAction(const std::string& name, const BT::NodeConfiguration& config)
     : BT::StatefulActionNode(name, config), request_sent_(false) {
     // 为当前 Action 创建独立的 ROS2 节点，避免与 BT 执行器共享执行流
-    node_ = rclcpp::Node::make_shared("find_action_ros_node");
+    node_ = rclcpp::Node::make_shared(name);
     
     // 订阅 Python 节点的状态话题
     status_sub_ = node_->create_subscription<std_msgs::msg::String>(
