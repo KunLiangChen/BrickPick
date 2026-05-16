@@ -5,6 +5,7 @@
 #include <std_srvs/srv/trigger.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <chrono>
+#include <atomic>
 
 namespace BT {
 
@@ -30,6 +31,8 @@ private:
     std::chrono::steady_clock::time_point start_time_;
     double timeout_sec_;
     bool request_sent_;
+
+    static std::atomic<bool> instance_counter_;
 };
 
 } // namespace BT
