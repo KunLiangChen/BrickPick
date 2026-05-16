@@ -4,9 +4,9 @@
         <Sequence name="BasicPickupSequence">
             <FindObject timeout="15.0"/>
             
-            <ApproachObject timeout="10.0"/>
+            <ApproachObject timeout="20.0"/>
 
-            <ApproachObject timeout="10.0"/>
+            <!-- <ApproachObject timeout="10.0"/> -->
             
             <ExecuteArmSequence timeout="15.0"/>
         </Sequence>

@@ -17,17 +17,28 @@
                                     <NavToIndexedPoseClient current_index="{current_index}" regions="{regions}" frame_id="map"/>
                                     
                                     <FindObject name="find_global" timeout="15.0"/>
-                                    <ApproachObject name="approach_global" timeout="10.0"/>
-                                    <ExecuteArmSequence name="arm_global" timeout="15.0"/>
-
+                                    
                                     <ForceSuccess>
-                                        <KeepRunningUntilFailure name="LocalPickupLoop">
-                                            <Sequence name="LocalPickup">
-                                                <FindObject name="find_local" timeout="15.0"/>
-                                                <ApproachObject name="approach_local" timeout="10.0"/>
-                                                <ExecuteArmSequence name="arm_local" timeout="15.0"/>
-                                            </Sequence>
-                                        </KeepRunningUntilFailure>
+                                        <Sequence name="GlobalGrabAndLocalClean">
+                                            <ApproachObject name="approach_global" timeout="30.0"/>
+                                            <ExecuteArmSequence name="arm_global" timeout="15.0"/>
+
+                                            <ForceSuccess>
+                                                <KeepRunningUntilFailure name="LocalPickupLoop">
+                                                    <Sequence name="LocalPickup">
+                                                        <FindObject name="find_local" timeout="15.0"/>
+                                                        
+                                                        <ForceSuccess>
+                                                            <Sequence name="LocalGrab">
+                                                                <ApproachObject name="approach_local" timeout="30.0"/>
+                                                                <ExecuteArmSequence name="arm_local" timeout="15.0"/>
+                                                            </Sequence>
+                                                        </ForceSuccess>
+                                                        
+                                                    </Sequence>
+                                                </KeepRunningUntilFailure>
+                                            </ForceSuccess>
+                                        </Sequence>
                                     </ForceSuccess>
 
                                 </Sequence>

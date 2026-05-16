@@ -8,7 +8,7 @@ brickpick_vision:
     camera_topic: "camera/image_color"
     
     # 推理阈值
-    conf_threshold: 0.65
+    conf_threshold: 0.5
     iou_threshold: 0.45
     imgsz: 640
     

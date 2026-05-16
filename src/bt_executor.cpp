@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     RCLCPP_INFO(executor_node->get_logger(), "BehaviorTree Executor 启动...");
 
     // 🔹 1. 加载 XML 路径（支持 launch 覆盖）
-    executor_node->declare_parameter<std::string>("bt_xml_path", "config/simple_pick_tree.xml");
+    executor_node->declare_parameter<std::string>("bt_xml_path", "config/brickpick_tree.xml");
     std::string xml_path = executor_node->get_parameter("bt_xml_path").as_string();
 
     // 🔹 2. 创建 Factory 并注册自定义 ActionNode

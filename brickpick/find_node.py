@@ -54,16 +54,18 @@ class FindNode(Node):
         return res
     
     def detection_callback(self, msg):
-        if not self.active: return        # 未激活时不处理
-        # 如果检测到数组不为空，说明看到了物体
-        # if len(msg.detections) > 0:
-        #     if not self.found:
-        #         self.get_logger().info("检测到物体！停止旋转。")
-        #         self.found = True
-        #         self.stop_robot()
-        if msg.detections and not self.found:
+        if not self.active: return       
+        
+        # 🌟 核心修改：让 Find 节点也过滤低分假目标，避免乱停
+        valid_detections = False
+        for d in msg.detections:
+            if len(d.results) > 0 and d.results[0].hypothesis.score >= 0.6: # 统一使用 0.6 作为阈值
+                valid_detections = True
+                break
+
+        if valid_detections and not self.found:
             self.found = True
-            self.get_logger().info("✅ 检测到物体！停止旋转。")
+            self.get_logger().info("✅ 检测到有效物体！停止旋转。")
             self.stop_robot()
 
 
