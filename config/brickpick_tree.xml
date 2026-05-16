@@ -1,24 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<root main_tree_to_execute="MainTree">
+<root BTCPP_format="4" main_tree_to_execute="MainTree">
     
     <BehaviorTree ID="MainTree">
         <Sequence name="Root">
 
             <ReadRegionCenters regions="{regions}" current_index="{current_index}"/>
 
-            <KeepRunningUntilFailure name="ProcessAllCenters">
+            <ForceSuccess>
+                <KeepRunningUntilFailure name="ProcessAllCenters">
+                    <Sequence name="ProcessOneCenter">
 
-                <Sequence name="ProcessOneCenter">
+                        <HasNextCenterPoint current_index="{current_index}" regions="{regions}"/>
 
-                    <HasNextCenterPoint current_index="{current_index}" regions="{regions}"/>
+                        <ForceSuccess>
+                            <NavToIndexedPoseClient current_index="{current_index}" regions="{regions}" frame_id="map"/>
+                        </ForceSuccess>
 
-                    <NavToIndexedPoseClient current_index="{current_index}" regions="{regions}" frame_id="map"/>
+                        <ForceSuccess>
+                            <KeepRunningUntilFailure name="ContinuousPickupMode">
+                                <Sequence name="PickupOneBlockAndRotate">
+                                    <FindObject timeout="15.0"/>
+                                    <ApproachObject timeout="10.0"/>
+                                    <ExecuteArmSequence timeout="15.0"/>
+                                </Sequence>
+                            </KeepRunningUntilFailure>
+                        </ForceSuccess>
 
-                    <IncrementIndex current_index="{current_index}"/>
+                        <IncrementIndex current_index="{current_index}"/>
 
-                </Sequence>
+                    </Sequence>
+                </KeepRunningUntilFailure>
+            </ForceSuccess>
 
-            </KeepRunningUntilFailure>
+            <ReturnToStartPosition />
 
         </Sequence>
     </BehaviorTree>
@@ -28,20 +42,29 @@
             <output_port name="regions">Vector of region coordinates</output_port>
             <output_port name="current_index">Starting index (default 0)</output_port>
         </Action>
-
         <Condition ID="HasNextCenterPoint">
             <input_port name="current_index">Current index to check</input_port>
             <input_port name="regions">Vector of region coordinates</input_port>
         </Condition>
-
         <Action ID="NavToIndexedPoseClient">
             <input_port name="current_index">Index of the target pose</input_port>
             <input_port name="regions">Vector of region coordinates</input_port>
             <input_port name="frame_id" default="map">Frame ID for navigation</input_port>
         </Action>
-
         <Action ID="IncrementIndex">
             <inout_port name="current_index">Index to increment</inout_port>
         </Action>
+
+        <Action ID="FindObject">
+            <input_port name="timeout" default="15.0">Timeout in seconds</input_port>
+        </Action>
+        <Action ID="ApproachObject">
+            <input_port name="timeout" default="10.0">Timeout in seconds</input_port>
+        </Action>
+        <Action ID="ExecuteArmSequence">
+            <input_port name="timeout" default="15.0">Timeout in seconds</input_port>
+        </Action>
+
+        <!-- <Action ID="ReturnToStartPosition"/> -->
     </TreeNodesModel>
 </root>
