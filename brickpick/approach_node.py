@@ -34,6 +34,11 @@ class ApproachNode(Node):
                 ('tracking_threshold', 80.0)  # 🔑 新增：空间连续追踪容差(像素)
             ]
         )
+        self.declare_parameter('extend_dist', 0.20) # 9cm
+        self.extend_dist = self.get_parameter('extend_dist').value
+        
+        self.extend_start_time = 0.0
+
         self.img_width = self.get_parameter('img_width').value
         self.img_height = self.get_parameter('img_height').value
         self.target_x = self.get_parameter('target_x_offset').value
@@ -46,14 +51,14 @@ class ApproachNode(Node):
         
         # 2. 状态与锁定变量
         self.last_detection_time = 0.0
-        self.current_state = "IDLE" # IDLE, ALIGN, APPROACH, DONE
+        self.current_state = "IDLE" # IDLE, ALIGN, APPROACH, EXTEND, DONE
         
         self.locked_x = 0.0  # 🔑 锁定目标的中心X
         self.locked_y = 0.0  # 🔑 锁定目标的中心Y
         self.target_x_current = 0.0 # 当前控制用的X
         self.target_y_current = 0.0 # 当前控制用的Y
         self.active = False
-
+        self.extend_duration = self.extend_dist / self.forward_speed
         # 3. 订阅与发布
         self.subscription = self.create_subscription(
             Detection2DArray,
@@ -146,14 +151,28 @@ class ApproachNode(Node):
             self.status_pub.publish(String(data="ALIGNING"))
         elif self.current_state == "APPROACH":
             if self.target_y_current > self.stop_y_threshold:
-                self.current_state = "DONE"
-                self.stop_robot()
-                self.get_logger().info("到达阈值，停止。")
+                self.current_state = "EXTEND"
+                self.extend_start_time = time.time()
+                self.get_logger().info(f"到达阈值，开始盲驶延长 {self.extend_dist}m...")
             else:
                 twist.linear.x = self.forward_speed
                 twist.angular.z = (self.target_x - self.target_x_current) * self.yaw_kp
+                self.cmd_pub.publish(twist)     
+            self.status_pub.publish(String(data="APPROACHING"))
+        
+        elif self.current_state == "EXTEND":
+            # 🚩 新增：盲驶逻辑
+            elapsed = time.time() - self.extend_start_time
+            if elapsed >= self.extend_duration:
+                self.current_state = "DONE"
+                self.stop_robot()
+                self.get_logger().info("盲驶完成，停止。")
+            else:
+                # 保持直线前进，不再纠偏（因为已经看不见目标了或目标太靠下）
+                twist.linear.x = self.forward_speed
                 self.cmd_pub.publish(twist)
             self.status_pub.publish(String(data="APPROACHING"))
+        
         elif self.current_state == "DONE":
             self.active = False           # 🔹 [BT集成] 任务完成
             self.status_pub.publish(String(data="SUCCESS"))
