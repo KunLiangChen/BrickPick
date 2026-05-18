@@ -155,7 +155,7 @@ class ApproachNode(Node):
             return
         
         # 🌟 核心修改 2：处理视觉丢失的情况
-        if self.current_state not in ["IDLE", "EXTEND"] and (now - self.last_detection_time > self.timeout_lost):
+        if self.current_state not in ["IDLE", "EXTEND", "DONE"] and (now - self.last_detection_time > self.timeout_lost):
             if self.current_state == "APPROACH":
                 if self.target_y_current > (self.stop_y_threshold - 60.0):
                     self.current_state = "EXTEND"

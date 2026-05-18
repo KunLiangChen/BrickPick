@@ -20,8 +20,8 @@ class FindNode(Node):
         self.declare_parameters(
             namespace='',
             parameters=[
-                ('rotate_speed', 0.6),            # 默认旋转速度 (rad/s)
-                ('required_confirm_frames', 3),   # 🌟 必须连续 3 帧看清才算数
+                ('rotate_speed', 0.5),            # 默认旋转速度 (rad/s)
+                ('required_confirm_frames', 4),   # 🌟 必须连续 3 帧看清才算数
                 ('min_confidence', 0.6)           # 🌟 置信度阈值
             ]
         )

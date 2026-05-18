@@ -5,7 +5,7 @@ approach_node:
     img_height: 360
     
     # 对准目标点 (基于相机内参 cx)
-    target_x_offset: 393.0
+    target_x_offset: 387.0
     
     # 控制参数
     yaw_kp: 0.002           # 转向比例增益

@@ -16,7 +16,7 @@
                                     
                                     <NavToIndexedPoseClient current_index="{current_index}" regions="{regions}" frame_id="map"/>
                                     
-                                    <FindObject name="find_global" timeout="15.0"/>
+                                    <FindObject name="find_global" timeout="12.0"/>
                                     
                                     <ForceSuccess>
                                         <Sequence name="GlobalGrabAndLocalClean">
@@ -26,7 +26,7 @@
                                             <ForceSuccess>
                                                 <KeepRunningUntilFailure name="LocalPickupLoop">
                                                     <Sequence name="LocalPickup">
-                                                        <FindObject name="find_local" timeout="15.0"/>
+                                                        <FindObject name="find_local" timeout="12.0"/>
                                                         
                                                         <ForceSuccess>
                                                             <Sequence name="LocalGrab">
