@@ -61,6 +61,7 @@ add_executable(bt_executor
   src/reading_region.cpp
   src/has_next_center_point.cpp
   src/increment_index.cpp
+  src/return_to_start_position.cpp
 )
 
 # 包含头文件目录（含 BT 和当前包）

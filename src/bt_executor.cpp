@@ -8,6 +8,7 @@
 #include "brickpick/has_next_center_point.hpp"
 #include "brickpick/reading_region.hpp" 
 #include "brickpick/increment_index.hpp"
+#include "brickpick/return_to_start_position.hpp"
 // #include "brickpick/"
 #include <chrono>
 #include <thread>
@@ -32,6 +33,7 @@ int main(int argc, char** argv) {
     factory.registerNodeType<HasNextCenterPoint>("HasNextCenterPoint");
     factory.registerNodeType<ReadRegionCenters>("ReadRegionCenters");
     factory.registerNodeType<IncrementIndex>("IncrementIndex");
+    factory.registerNodeType<ReturnToStartPosition>("ReturnToStartPosition");
     // 🔹 3. 从 XML 构建树
     BT::Tree tree;
     try {
