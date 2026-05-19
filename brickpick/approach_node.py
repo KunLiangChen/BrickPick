@@ -34,7 +34,7 @@ class ApproachNode(Node):
                 ('min_confidence', 0.6)        # 🔑 新增：置信度阈值，低于此概率的框直接忽略
             ]
         )
-        self.declare_parameter('extend_dist', 0.20)
+        self.declare_parameter('extend_dist', 0.30)
         self.extend_dist = self.get_parameter('extend_dist').value
         
         self.img_width = self.get_parameter('img_width').value

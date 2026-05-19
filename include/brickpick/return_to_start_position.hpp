@@ -4,6 +4,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "nav2_msgs/action/navigate_to_pose.hpp"
+#include <geometry_msgs/msg/twist.hpp>
 #include <thread>
 #include <future>
 
@@ -28,7 +29,7 @@ private:
 
     std::shared_ptr<rclcpp::Node> node_;
     rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SharedPtr action_client_;
-    
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;
     rclcpp::executors::SingleThreadedExecutor executor_;
     std::thread spinner_thread_;
     std::atomic<bool> is_spinning_;
