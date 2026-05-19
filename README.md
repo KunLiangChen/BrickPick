@@ -367,11 +367,10 @@ ReadRegionCenters → 遍历每个区域中心:
 # Python 依赖
 pip install ultralytics scikit-image scipy opencv-python pyyaml
 
-# BehaviorTree.CPP
-sudo apt install ros-humble-behaviortree-cpp
+# BehaviorTree.CPP V4
+#https://github.com/BehaviorTree/BehaviorTree.CPP
 
-# Nav2
-sudo apt install ros-humble-nav2-bringup
+# Nav2, slam toolbox
 ```
 
 ---
