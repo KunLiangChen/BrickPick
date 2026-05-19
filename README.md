@@ -3,6 +3,10 @@
 
 # BrickPick
 
+<img width="400" height="225" alt="4613_1779098093-ezgif com-optimize" src="https://github.com/user-attachments/assets/d433e084-e983-4fe5-bb63-a5573a930ec6" />
+
+
+
 [![ROS 2](https://img.shields.io/badge/ROS_2-Humble-blue?logo=ros)](https://docs.ros.org/en/humble/)
 [![Python](https://img.shields.io/badge/Python-3.10-3776AB?logo=python)](https://www.python.org/)
 [![C++](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=c%2B%2B)](https://isocpp.org/)
@@ -266,6 +270,7 @@ Apache 2.0 — see [LICENSE](LICENSE).
 <summary><a id="chinese"><b>🇨🇳 中文</b></a> &nbsp;|&nbsp; <a href="#"><b>🇬🇧 English</b></a></summary>
 
 # BrickPick
+<img width="400" height="225" alt="4613_1779098093-ezgif com-optimize" src="https://github.com/user-attachments/assets/d433e084-e983-4fe5-bb63-a5573a930ec6" />
 
 [![ROS 2](https://img.shields.io/badge/ROS_2-Humble-blue?logo=ros)](https://docs.ros.org/en/humble/)
 [![Python](https://img.shields.io/badge/Python-3.10-3776AB?logo=python)](https://www.python.org/)
