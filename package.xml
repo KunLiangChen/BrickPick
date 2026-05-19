@@ -3,7 +3,7 @@
 <package format="3">
   <name>brickpick</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>This package is used for brickpick project. </description>
   <maintainer email="3140308969@qq.com">nvidia</maintainer>
   <license>Apache-2.0</license>
 
@@ -20,7 +20,6 @@
   <depend>cv_bridge</depend>
   <depend>nav2_msgs</depend>
   <depend>rclcpp_action</depend>
-    <!-- 🔹 新增：BehaviorTree 集成依赖 🔹 -->
   <depend>behaviortree_cpp</depend>
   <depend>std_srvs</depend>
   <depend>action_msgs</depend>
