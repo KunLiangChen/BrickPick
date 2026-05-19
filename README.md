@@ -117,6 +117,9 @@ pip install ultralytics scikit-image scipy opencv-python pyyaml
 
 ## Build & Run
 
+### Prepare YOLO Weights
+Place your trained YOLOv8 model weights in the `model` directory before launching the vision node.
+
 ### Build
 
 ```bash
@@ -376,6 +379,9 @@ pip install ultralytics scikit-image scipy opencv-python pyyaml
 ---
 
 ## 编译与运行
+
+### 准备 YOLO 权重文件
+在启动视觉节点前，请将训练好的 YOLOv8 权重文件放置在 `model` 目录下。
 
 ### 编译
 
