@@ -30,6 +30,7 @@ devel/
 .vs/
 out/
 .idea/
+.vscode/
 
 # --- Python 忽略内容 ---
 # 字节码文件
