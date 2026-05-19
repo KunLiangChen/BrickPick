@@ -12,9 +12,8 @@ class FindAction : public BT::StatefulActionNode {
 public:
     FindAction(const std::string& name, const BT::NodeConfiguration& config);
 
-    // 🔹 BT 端口定义：允许在 XML 中传入 timeout
     static BT::PortsList providedPorts() {
-        return { BT::InputPort<double>("timeout", 15.0, "Find 节点最大执行时间(秒)") };
+        return { BT::InputPort<double>("timeout", 15.0, "Max execution time (seconds)") };
     }
 
     BT::NodeStatus onStart() override;

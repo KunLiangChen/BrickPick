@@ -14,7 +14,6 @@ public:
     ReturnToStartPosition(const std::string &name, const BT::NodeConfiguration &config);
     ~ReturnToStartPosition();
 
-    // 🌟 返回起点不需要任何输入参数，所以这里返回空列表
     static BT::PortsList providedPorts() {
         return {};
     }

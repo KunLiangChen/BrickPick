@@ -12,9 +12,8 @@ class ArmAction : public BT::StatefulActionNode {
 public:
     ArmAction(const std::string& name, const BT::NodeConfiguration& config);
 
-    // 🔹 BT 端口定义：XML 中可配置机械臂序列最大执行时间
     static BT::PortsList providedPorts() {
-        return { BT::InputPort<double>("timeout", 15.0, "Arm sequence max execution time (seconds)") };
+        return { BT::InputPort<double>("timeout", 15.0, "Max execution time (seconds)") };
     }
 
     BT::NodeStatus onStart() override;

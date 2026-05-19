@@ -13,9 +13,8 @@ class ApproachAction : public BT::StatefulActionNode {
 public:
     ApproachAction(const std::string& name, const BT::NodeConfiguration& config);
 
-    // 🔹 BT 端口定义：XML 中可配置超时时间
     static BT::PortsList providedPorts() {
-        return { BT::InputPort<double>("timeout", 20.0, "Approach 最大执行时间(秒)") };
+        return { BT::InputPort<double>("timeout", 20.0, "Max execution time (seconds)") };
     }
 
     BT::NodeStatus onStart() override;
