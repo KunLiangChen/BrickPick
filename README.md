@@ -1,5 +1,6 @@
 <details open>
 <summary><b>🇬🇧 English</b> &nbsp;|&nbsp; <a href="#chinese"><b>🇨🇳 中文</b></a></summary>
+<img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/d7f251e3-6ea8-41f9-87a0-e02566e79328" />
 
 # BrickPick
 
